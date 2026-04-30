@@ -3,35 +3,25 @@
 import { useState, useEffect } from "react";
 import { Calendar as CalendarIcon, Clock, User, MapPin, Search } from "lucide-react";
 
-// Mock data for appointments
-const MOCK_APPOINTMENTS = [
-  {
-    id: 1,
-    name: "Carlos Mendoza",
-    phone: "81 1234 5678",
-    date: "2024-05-10",
-    time: "10:00",
-    branch: "Carrizalejo",
-    service: "Servicio Completo",
-    barber: "Barbero 1",
-  },
-  {
-    id: 2,
-    name: "Andrés Garza",
-    phone: "81 8765 4321",
-    date: "2024-05-10",
-    time: "14:30",
-    branch: "Carretera Nacional",
-    service: "Corte Rápido",
-    barber: "Sin preferencia",
-  },
-];
-
 export default function AdminDashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  
   const [appointments, setAppointments] = useState([]);
   const [filterDate, setFilterDate] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === "Monterrey2026$$") {
+      setIsAuthenticated(true);
+      setLoginError("");
+    } else {
+      setLoginError("Contraseña incorrecta");
+    }
+  };
 
   // Fetch appointments when component mounts or filterDate changes
   useEffect(() => {
@@ -59,6 +49,38 @@ export default function AdminDashboard() {
   }, [filterDate]);
 
   const filteredAppointments = appointments;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center animate-fade-in">
+        <form onSubmit={handleLogin} className="bg-white/5 border border-white/10 p-8 rounded-2xl w-full max-w-md space-y-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-['Oswald'] font-bold uppercase">Acceso Restringido</h1>
+            <p className="text-gray-400 mt-2">Solo personal autorizado de Men & Boys</p>
+          </div>
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                type="password"
+                placeholder="Ingresa la contraseña"
+                className="w-full bg-black/50 border border-white/20 rounded-lg p-3 text-white focus:border-mbRed outline-none transition-colors pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoFocus
+              />
+            </div>
+            {loginError && <p className="text-mbRed text-sm animate-shake">{loginError}</p>}
+          </div>
+          <button 
+            type="submit" 
+            className="w-full bg-mbRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors uppercase tracking-widest shadow-lg shadow-mbRed/20"
+          >
+            Acceder al Panel
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in space-y-8">
