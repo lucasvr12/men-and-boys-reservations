@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { branches, stylists } from "@/lib/constants";
 
 export default function AdminDashboard() {
@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   
-  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff", "calendar"
+  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff"
   const [appointments, setAppointments] = useState([]);
   const [allMonthlyAppointments, setAllMonthlyAppointments] = useState([]);
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
@@ -64,7 +64,7 @@ export default function AdminDashboard() {
 
   const fetchMonthlyAppointments = async () => {
     try {
-      const res = await fetch('/api/admin/appointments'); // Sin fecha trae los próximos 30 días
+      const res = await fetch('/api/admin/appointments'); 
       const data = await res.json();
       if (res.ok) setAllMonthlyAppointments(data.appointments || []);
     } catch (err) {
@@ -133,7 +133,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Calendar Helpers
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -146,12 +145,10 @@ export default function AdminDashboard() {
     const { firstDay, daysInMonth } = getDaysInMonth(viewDate);
     const days = [];
     
-    // Empty slots for previous month
     for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) {
-      days.push(<div key={`empty-${i}`} className="h-24 border border-white/5 bg-white/[0.02]"></div>);
+      days.push(<div key={`empty-${i}`} className="h-16 md:h-20 border border-white/5 bg-white/[0.01]"></div>);
     }
 
-    // Actual days
     for (let d = 1; d <= daysInMonth; d++) {
       const currentFullDate = `${viewDate.getFullYear()}-${(viewDate.getMonth() + 1).toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
       const dayApps = allMonthlyAppointments.filter(a => a.date === currentFullDate);
@@ -161,24 +158,23 @@ export default function AdminDashboard() {
       days.push(
         <button
           key={d}
-          onClick={() => {
-            setFilterDate(currentFullDate);
-            setActiveTab("appointments");
-          }}
-          className={`h-24 border border-white/10 p-2 text-left transition-all hover:bg-white/10 relative ${
-            isSelected ? "bg-mbRed/20 border-mbRed/50" : "bg-white/5"
-          } ${isToday ? "ring-1 ring-mbRed ring-inset" : ""}`}
+          onClick={() => setFilterDate(currentFullDate)}
+          className={`h-16 md:h-20 border border-white/10 p-1 md:p-2 text-left transition-all hover:bg-white/10 relative ${
+            isSelected ? "bg-mbRed/30 border-mbRed/50 z-10" : "bg-white/5"
+          } ${isToday ? "ring-2 ring-mbRed/50 ring-inset" : ""}`}
         >
-          <span className={`text-sm font-bold ${isSelected ? "text-mbRed" : "text-gray-400"}`}>{d}</span>
-          <div className="mt-1 space-y-1">
-            {dayApps.slice(0, 2).map((app, i) => (
-              <div key={i} className="text-[10px] truncate bg-white/10 px-1 rounded text-gray-300">
-                {app.time} {app.name}
-              </div>
+          <span className={`text-xs font-bold ${isSelected ? "text-white" : "text-gray-400"}`}>{d}</span>
+          <div className="mt-1 flex flex-wrap gap-0.5">
+            {dayApps.map((app, i) => (
+              <div 
+                key={i} 
+                className={`w-1.5 h-1.5 rounded-full ${
+                  app.name.includes("COMIDA") ? "bg-yellow-500" : 
+                  app.name.includes("VACACIONES") ? "bg-blue-500" : "bg-mbRed"
+                }`}
+                title={`${app.time} - ${app.name}`}
+              ></div>
             ))}
-            {dayApps.length > 2 && (
-              <div className="text-[10px] text-mbRed font-bold">+{dayApps.length - 2} más</div>
-            )}
           </div>
         </button>
       );
@@ -224,13 +220,7 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab("appointments")}
               className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'appointments' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
             >
-              CITAS
-            </button>
-            <button 
-              onClick={() => setActiveTab("calendar")}
-              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'calendar' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
-            >
-              CALENDARIO
+              CITAS Y CALENDARIO
             </button>
             <button 
               onClick={() => setActiveTab("staff")}
@@ -240,103 +230,102 @@ export default function AdminDashboard() {
             </button>
           </div>
         </div>
-
-        {activeTab === 'appointments' && (
-          <div className="flex items-center gap-2 bg-black/50 border border-white/20 rounded-lg p-2">
-            <Search className="w-5 h-5 text-gray-500 ml-2" />
-            <input
-              type="date"
-              className="bg-transparent border-none focus:ring-0 text-sm [color-scheme:dark]"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-            />
-          </div>
-        )}
       </div>
 
       {activeTab === 'appointments' ? (
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="text-center py-20"><div className="w-10 h-10 border-4 border-mbRed border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>Cargando...</div>
-          ) : appointments.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">No hay citas para este día.</div>
-          ) : (
-            <div className="grid gap-4">
-              {appointments.map((app) => (
-                <div key={app.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/30 transition-colors">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-mbRed/20 text-mbRed rounded-full flex items-center justify-center font-bold">
-                      {app.time.split(":")[0]}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide flex items-center gap-2">
-                        {app.name}
-                        {app.name.includes("COMIDA") && <Coffee className="w-4 h-4 text-yellow-500" />}
-                        {app.name.includes("VACACIONES") && <Umbrella className="w-4 h-4 text-mbRed" />}
-                      </h3>
-                      <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-sm text-gray-400">
-                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {app.time}</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {app.branch}</span>
-                        <span className="flex items-center gap-1"><User className="w-4 h-4" /> {app.stylist}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => setEditingApp(app)}
-                      className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all"
-                      title="Editar"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(app.id, app.branch)}
-                      className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
+        <div className="space-y-8">
+          {/* Monthly Calendar Integration */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden animate-slide-up shadow-2xl">
+            <div className="p-6 bg-black/40 flex items-center justify-between border-b border-white/10">
+              <h2 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-3">
+                <CalendarIcon className="text-mbRed" />
+                {viewDate.toLocaleString('es-MX', { month: 'long', year: 'numeric' })}
+              </h2>
+              <div className="flex gap-2">
+                <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1)))} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+                <button onClick={() => setViewDate(new Date())} className="px-3 py-1 text-xs font-bold bg-mbRed/20 text-mbRed rounded-lg hover:bg-mbRed/30 transition-colors">HOY</button>
+                <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1)))} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-7 gap-px bg-white/10">
+              {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
+                <div key={day} className="bg-black/60 py-3 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5">
+                  {day}
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-      ) : activeTab === 'calendar' ? (
-        <div className="animate-slide-up">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-['Oswald'] font-bold uppercase">
-              {viewDate.toLocaleString('es-MX', { month: 'long', year: 'numeric' })}
-            </h2>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1)))}
-                className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
-              >
-                Anterior
-              </button>
-              <button 
-                onClick={() => setViewDate(new Date())}
-                className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
-              >
-                Hoy
-              </button>
-              <button 
-                onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1)))}
-                className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
-              >
-                Siguiente
-              </button>
+              {renderCalendar()}
             </div>
           </div>
-          
-          <div className="grid grid-cols-7 gap-px bg-white/10 border border-white/10 rounded-xl overflow-hidden">
-            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
-              <div key={day} className="bg-black/40 p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-white/10">
-                {day}
+
+          {/* Daily Appointments List */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-['Oswald'] font-bold uppercase">
+                Citas del {new Date(filterDate + 'T00:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </h2>
+              <div className="hidden md:flex items-center gap-2 bg-black/50 border border-white/20 rounded-lg px-3 py-2">
+                <Search className="w-4 h-4 text-gray-500" />
+                <input
+                  type="date"
+                  className="bg-transparent border-none focus:ring-0 text-sm [color-scheme:dark]"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                />
               </div>
-            ))}
-            {renderCalendar()}
+            </div>
+
+            {isLoading ? (
+              <div className="text-center py-20 flex flex-col items-center">
+                <div className="w-10 h-10 border-4 border-mbRed border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500 text-sm">Actualizando agenda...</p>
+              </div>
+            ) : appointments.length === 0 ? (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-20 text-center text-gray-500 italic">
+                No hay citas ni bloqueos registrados para este día.
+              </div>
+            ) : (
+              <div className="grid gap-4 animate-fade-in">
+                {appointments.map((app) => (
+                  <div key={app.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/30 transition-all group shadow-lg hover:shadow-mbRed/5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 bg-mbRed/20 text-mbRed rounded-xl flex items-center justify-center font-bold text-xl font-['Oswald']">
+                        {app.time.split(":")[0]}
+                        <span className="text-[10px] ml-0.5">:{app.time.split(":")[1]}</span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide flex items-center gap-2">
+                          {app.name}
+                          {app.name.includes("COMIDA") && <Coffee className="w-4 h-4 text-yellow-500" />}
+                          {app.name.includes("VACACIONES") && <Umbrella className="w-4 h-4 text-blue-500" />}
+                        </h3>
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2 text-sm text-gray-400">
+                          <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-mbRed/60" /> {app.time}</span>
+                          <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-mbRed/60" /> {app.branch}</span>
+                          <span className="flex items-center gap-1.5"><User className="w-4 h-4 text-mbRed/60" /> {app.stylist}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => setEditingApp(app)}
+                        className="p-3 bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(app.id, app.branch)}
+                        className="p-3 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ) : (
