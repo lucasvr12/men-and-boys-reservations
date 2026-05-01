@@ -58,7 +58,6 @@ export default function Home() {
 
   const handleBranchSelect = (id) => {
     updateData("branch", id);
-    nextStep();
   };
 
   const handleServiceSelect = (id) => {
@@ -135,16 +134,48 @@ export default function Home() {
                 onClick={() => handleBranchSelect(branch.id)}
                 className={`flex flex-col items-center p-8 border rounded-xl transition-all duration-300 hover:-translate-y-1 ${
                   formData.branch === branch.id
-                    ? "border-mbRed bg-mbRed/10"
+                    ? "border-mbRed bg-mbRed/10 shadow-lg shadow-mbRed/20"
                     : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"
                 }`}
               >
                 <MapPin className={`w-10 h-10 mb-4 ${formData.branch === branch.id ? "text-mbRed" : "text-gray-400"}`} />
                 <h3 className="text-xl font-bold font-['Oswald'] uppercase">{branch.name}</h3>
-                <p className="text-sm text-gray-500 mt-2 text-center">{branch.address}</p>
+                <p className="text-xs text-gray-500 mt-2 text-center leading-relaxed">{branch.address}</p>
               </button>
             ))}
           </div>
+
+          {/* Map Display Section */}
+          {formData.branch && (
+            <div className="mt-8 animate-fade-in space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-mbRed uppercase tracking-widest flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> Ubicación en Mapa
+                </h4>
+                <span className="text-[10px] text-gray-500 uppercase">Cerca de ti</span>
+              </div>
+              <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative bg-white/5">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps?q=${encodeURIComponent(branches.find(b => b.id === formData.branch).address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                ></iframe>
+              </div>
+              
+              <div className="pt-4">
+                <button
+                  onClick={nextStep}
+                  className="w-full bg-mbRed text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-all uppercase tracking-[0.2em] shadow-lg shadow-mbRed/30 animate-bounce-subtle"
+                >
+                  Continuar con esta sucursal
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

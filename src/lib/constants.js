@@ -1,7 +1,7 @@
 export const branches = [
-  { id: "carrizalejo", name: "Carrizalejo", address: "Sucursal Carrizalejo, NL" },
-  { id: "mision", name: "Misión del Valle", address: "Sucursal Misión del Valle, NL" },
-  { id: "nacional", name: "Carretera Nacional", address: "Sucursal Carretera Nacional, NL" },
+  { id: "carrizalejo", name: "Carrizalejo", address: "Avenida Manuel Gómez Morín 100, San Pedro Garza García, México, 66290" },
+  { id: "mision", name: "Misión del Valle", address: "Alfonso Reyes 400 Local 30, San Pedro Garza García, México, 66230" },
+  { id: "nacional", name: "Carretera Nacional", address: "Carretera Nacional 900 Plaza Palmares Sur Local 12, Monterrey, México, 64987" },
 ];
 
 export const stylists = [
