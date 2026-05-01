@@ -1,3 +1,4 @@
+import Link from "next/link";
 import "./globals.css";
 
 export const metadata = {
@@ -16,9 +17,9 @@ export default function RootLayout({ children }) {
       <body className="font-['Inter',sans-serif] antialiased">
         <header className="bg-black/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-            <div className="flex items-center py-2">
+            <Link href="/" className="flex items-center py-2 hover:opacity-80 transition-opacity">
               <img src="/logo.jpg" alt="Men & Boys" className="h-14 md:h-16 w-auto object-contain" />
-            </div>
+            </Link>
             <nav>
               <a href="/admin" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Staff
