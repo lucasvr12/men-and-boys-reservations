@@ -146,7 +146,7 @@ export default function AdminDashboard() {
     const days = [];
     
     for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) {
-      days.push(<div key={`empty-${i}`} className="h-16 md:h-20 border border-white/5 bg-white/[0.01]"></div>);
+      days.push(<div key={`empty-${i}`} className="h-16 md:h-24 border border-white/5 bg-white/[0.01]"></div>);
     }
 
     for (let d = 1; d <= daysInMonth; d++) {
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
         <button
           key={d}
           onClick={() => setFilterDate(currentFullDate)}
-          className={`h-16 md:h-20 border border-white/10 p-1 md:p-2 text-left transition-all hover:bg-white/10 relative ${
+          className={`h-16 md:h-24 border border-white/10 p-1 md:p-2 text-left transition-all hover:bg-white/10 relative ${
             isSelected ? "bg-mbRed/30 border-mbRed/50 z-10" : "bg-white/5"
           } ${isToday ? "ring-2 ring-mbRed/50 ring-inset" : ""}`}
         >
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
       <div className="min-h-[60vh] flex items-center justify-center animate-fade-in">
         <form onSubmit={handleLogin} className="bg-white/5 border border-white/10 p-8 rounded-2xl w-full max-w-md space-y-6">
           <div className="text-center">
-            <h1 className="text-2xl font-['Oswald'] font-bold uppercase">Acceso Restringido</h1>
+            <h1 className="text-2xl font-['Oswald'] font-bold uppercase text-white">Acceso Restringido</h1>
             <p className="text-gray-400 mt-2">Solo personal autorizado de Men & Boys</p>
           </div>
           <div className="space-y-4">
@@ -211,10 +211,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="animate-fade-in space-y-8">
+    <div className="animate-fade-in space-y-8 text-white">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6">
         <div>
-          <h1 className="text-3xl font-['Oswald'] font-bold uppercase">Panel de Control</h1>
+          <h1 className="text-3xl font-['Oswald'] font-bold uppercase text-white">Panel de Control</h1>
           <div className="flex gap-4 mt-4">
             <button 
               onClick={() => setActiveTab("appointments")}
@@ -237,14 +237,14 @@ export default function AdminDashboard() {
           {/* Monthly Calendar Integration */}
           <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden animate-slide-up shadow-2xl">
             <div className="p-6 bg-black/40 flex items-center justify-between border-b border-white/10">
-              <h2 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-3">
+              <h2 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-3 text-white">
                 <CalendarIcon className="text-mbRed" />
                 {viewDate.toLocaleString('es-MX', { month: 'long', year: 'numeric' })}
               </h2>
               <div className="flex gap-2">
-                <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1)))} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+                <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1)))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"><ChevronLeft className="w-5 h-5" /></button>
                 <button onClick={() => setViewDate(new Date())} className="px-3 py-1 text-xs font-bold bg-mbRed/20 text-mbRed rounded-lg hover:bg-mbRed/30 transition-colors">HOY</button>
-                <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1)))} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
+                <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1)))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"><ChevronRightIcon className="w-5 h-5" /></button>
               </div>
             </div>
             
@@ -261,14 +261,14 @@ export default function AdminDashboard() {
           {/* Daily Appointments List */}
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-['Oswald'] font-bold uppercase">
+              <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">
                 Citas del {new Date(filterDate + 'T00:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
               </h2>
               <div className="hidden md:flex items-center gap-2 bg-black/50 border border-white/20 rounded-lg px-3 py-2">
                 <Search className="w-4 h-4 text-gray-500" />
                 <input
                   type="date"
-                  className="bg-transparent border-none focus:ring-0 text-sm [color-scheme:dark]"
+                  className="bg-transparent border-none focus:ring-0 text-sm [color-scheme:dark] text-white"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
                 />
@@ -288,13 +288,13 @@ export default function AdminDashboard() {
               <div className="grid gap-4 animate-fade-in">
                 {appointments.map((app) => (
                   <div key={app.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/30 transition-all group shadow-lg hover:shadow-mbRed/5">
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-4 text-white">
                       <div className="w-14 h-14 bg-mbRed/20 text-mbRed rounded-xl flex items-center justify-center font-bold text-xl font-['Oswald']">
                         {app.time.split(":")[0]}
                         <span className="text-[10px] ml-0.5">:{app.time.split(":")[1]}</span>
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide flex items-center gap-2">
+                        <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide flex items-center gap-2 text-white">
                           {app.name}
                           {app.name.includes("COMIDA") && <Coffee className="w-4 h-4 text-yellow-500" />}
                           {app.name.includes("VACACIONES") && <Umbrella className="w-4 h-4 text-blue-500" />}
@@ -329,58 +329,10 @@ export default function AdminDashboard() {
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="text-center py-20"><div className="w-10 h-10 border-4 border-mbRed border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>Cargando...</div>
-          ) : appointments.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">No hay citas para este día.</div>
-          ) : (
-            <div className="grid gap-4">
-              {appointments.map((app) => (
-                <div key={app.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/30 transition-colors">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-mbRed/20 text-mbRed rounded-full flex items-center justify-center font-bold">
-                      {app.time.split(":")[0]}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide flex items-center gap-2">
-                        {app.name}
-                        {app.name.includes("COMIDA") && <Coffee className="w-4 h-4 text-yellow-500" />}
-                        {app.name.includes("VACACIONES") && <Umbrella className="w-4 h-4 text-mbRed" />}
-                      </h3>
-                      <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-sm text-gray-400">
-                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {app.time}</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {app.branch}</span>
-                        <span className="flex items-center gap-1"><User className="w-4 h-4" /> {app.stylist}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => setEditingApp(app)}
-                      className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all"
-                      title="Editar"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(app.id, app.branch)}
-                      className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
         <div className="grid md:grid-cols-2 gap-8">
           {/* Block Form */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-2xl space-y-6">
-            <h2 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-2">
+            <h2 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-2 text-white">
               <PlusCircle className="text-mbRed" /> Bloquear Horario
             </h2>
             <form onSubmit={handleCreateBlock} className="space-y-4">
@@ -454,7 +406,7 @@ export default function AdminDashboard() {
               <button 
                 type="submit" 
                 disabled={isBlocking}
-                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all"
+                className="w-full bg-mbRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all"
               >
                 {isBlocking ? "Bloqueando..." : "Crear Bloqueo"}
               </button>
@@ -462,7 +414,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="bg-white/5 border border-white/10 p-8 rounded-2xl">
-            <h2 className="text-xl font-['Oswald'] font-bold uppercase mb-6">Staff por Sucursal</h2>
+            <h2 className="text-xl font-['Oswald'] font-bold uppercase mb-6 text-white">Staff por Sucursal</h2>
             <div className="space-y-6">
               {branches.map(branch => (
                 <div key={branch.id}>
@@ -471,7 +423,7 @@ export default function AdminDashboard() {
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {stylists.filter(s => s.branch === branch.id).map(s => (
-                      <div key={s.id} className="bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+                      <div key={s.id} className="bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-sm flex items-center gap-2 text-white">
                         <img src={s.img} className="w-6 h-6 rounded-full" alt="" />
                         {s.name}
                       </div>
@@ -491,7 +443,7 @@ export default function AdminDashboard() {
             <button onClick={() => setEditingApp(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
               <X className="w-6 h-6" />
             </button>
-            <h2 className="text-2xl font-['Oswald'] font-bold uppercase mb-6">Editar Cita</h2>
+            <h2 className="text-2xl font-['Oswald'] font-bold uppercase mb-6 text-white">Editar Cita</h2>
             <form onSubmit={handleUpdate} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -529,7 +481,7 @@ export default function AdminDashboard() {
                 <button 
                   type="button" 
                   onClick={() => setEditingApp(null)}
-                  className="flex-1 bg-white/5 border border-white/10 py-3 rounded-lg font-bold"
+                  className="flex-1 bg-white/5 border border-white/10 py-3 rounded-lg font-bold text-white"
                 >
                   Cancelar
                 </button>
