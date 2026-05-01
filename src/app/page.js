@@ -122,7 +122,7 @@ export default function Home() {
 
       {/* STEP 1: SUCURSAL */}
       {step === 1 && (
-        <div className="space-y-6 animate-slide-up">
+        <div key="step1" className="space-y-6 animate-step-in">
           <div className="text-center mb-10">
             <h1 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu sucursal</h1>
             <p className="text-gray-400">Selecciona la ubicación más cercana a ti en Nuevo León.</p>
@@ -181,7 +181,7 @@ export default function Home() {
 
       {/* STEP 2: SERVICIO */}
       {step === 2 && (
-        <div className="space-y-6 animate-slide-up">
+        <div key="step2" className="space-y-6 animate-step-in">
           <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
             <ArrowLeft className="w-4 h-4 mr-1" /> Volver
           </button>
@@ -214,7 +214,7 @@ export default function Home() {
 
       {/* STEP 3: ESTILISTA */}
       {step === 3 && (
-        <div className="space-y-6 animate-slide-up">
+        <div key="step3" className="space-y-6 animate-step-in">
           <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
             <ArrowLeft className="w-4 h-4 mr-1" /> Volver
           </button>
@@ -245,7 +245,7 @@ export default function Home() {
 
       {/* STEP 4: DATOS */}
       {step === 4 && (
-        <div className="max-w-md mx-auto space-y-6 animate-slide-up">
+        <div key="step4" className="max-w-md mx-auto space-y-6 animate-step-in">
           <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
             <ArrowLeft className="w-4 h-4 mr-1" /> Volver
           </button>
@@ -373,7 +373,7 @@ export default function Home() {
 
       {/* STEP 5: SUCCESS */}
       {step === 5 && (
-        <div className="text-center py-20 animate-scale-in">
+        <div key="step5" className="text-center py-20 animate-scale-in">
           <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-12 h-12 text-green-500" />
           </div>
