@@ -300,6 +300,18 @@ export default function Home() {
                 onChange={(e) => updateData("phone", e.target.value)}
               />
             </div>
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-4 rounded-lg">
+              <input 
+                type="checkbox" 
+                id="sendReminders"
+                className="w-5 h-5 accent-mbRed"
+                checked={formData.sendReminders || false}
+                onChange={(e) => updateData("sendReminders", e.target.checked)}
+              />
+              <label htmlFor="sendReminders" className="text-sm text-gray-300">
+                Enviarme recordatorios por SMS (1 día y 1.5 horas antes)
+              </label>
+            </div>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Fecha</label>
               <div className="relative">

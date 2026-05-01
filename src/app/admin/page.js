@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X, ChevronLeft, ChevronRight as ChevronRightIcon, CheckCircle } from "lucide-react";
 import { branches, stylists } from "@/lib/constants";
 
 export default function AdminDashboard() {
@@ -9,9 +9,10 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   
-  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff"
+  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff", "profiles"
   const [appointments, setAppointments] = useState([]);
   const [allMonthlyAppointments, setAllMonthlyAppointments] = useState([]);
+  const [stylistSettings, setStylistSettings] = useState({});
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -72,10 +73,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchStylistSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/stylists');
+      const data = await res.json();
+      setStylistSettings(data);
+    } catch (err) {
+      console.error("Error fetching stylist settings:", err);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchAppointments();
       fetchMonthlyAppointments();
+      fetchStylistSettings();
     }
   }, [filterDate, isAuthenticated]);
 
@@ -228,6 +240,12 @@ export default function AdminDashboard() {
             >
               GESTIÓN STAFF
             </button>
+            <button 
+              onClick={() => setActiveTab("profiles")}
+              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'profiles' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+            >
+              PERFILES STAFF
+            </button>
           </div>
         </div>
       </div>
@@ -328,8 +346,61 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+      ) : activeTab === 'profiles' ? (
+        <div className="space-y-8 animate-slide-up">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {stylists.filter(s => s.canTakeAppointments).map(stylist => (
+              <div key={stylist.id} className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4 hover:border-white/20 transition-all">
+                <div className="flex items-center gap-4">
+                  <img src={stylist.img} alt={stylist.name} className="w-16 h-16 rounded-full object-cover" />
+                  <div>
+                    <h3 className="text-xl font-['Oswald'] font-bold uppercase">{stylist.name}</h3>
+                    <p className="text-xs text-gray-500 uppercase tracking-widest">{stylist.branch}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase">Número para SMS</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="tel"
+                      placeholder="+528112345678"
+                      className="flex-1 bg-black/50 border border-white/20 rounded-lg p-2 text-sm text-white outline-none focus:border-mbRed transition-colors"
+                      value={stylistSettings[stylist.id]?.phone || ""}
+                      onChange={(e) => {
+                        const newSettings = {
+                          ...stylistSettings,
+                          [stylist.id]: { ...stylistSettings[stylist.id], phone: e.target.value }
+                        };
+                        setStylistSettings(newSettings);
+                      }}
+                    />
+                    <button 
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/admin/stylists', {
+                            method: 'POST',
+                            body: JSON.stringify(stylistSettings)
+                          });
+                          if (res.ok) alert("Perfil actualizado");
+                        } catch (err) {
+                          alert("Error al guardar");
+                        }
+                      }}
+                      className="bg-mbRed/20 text-mbRed hover:bg-mbRed hover:text-white p-2 rounded-lg transition-all"
+                      title="Guardar"
+                    >
+                      <CheckCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-gray-600">Incluye código de país (ej. +52)</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-8 animate-slide-up">
           {/* Block Form */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-2xl space-y-6">
             <h2 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-2 text-white">

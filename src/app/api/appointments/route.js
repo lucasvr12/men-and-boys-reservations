@@ -61,8 +61,36 @@ export async function POST(req) {
 
     const response = await calendar.events.insert({
       calendarId: calendarId,
-      requestBody: event,
+      requestBody: {
+        ...event,
+        description: `${event.description}\nRecordatorios: ${body.sendReminders ? "Sí" : "No"}`
+      },
     });
+
+    // SMS Integration
+    try {
+      const { sendSMS } = await import("@/lib/twilio");
+      const { promises: fs } = await import("fs");
+      const path = await import("path");
+      
+      const stylistsConfigPath = path.join(process.cwd(), 'src/data/stylists.json');
+      const stylistsConfig = JSON.parse(await fs.readFile(stylistsConfigPath, 'utf8'));
+      
+      const stylistPhone = stylistsConfig[body.stylist]?.phone;
+
+      // 1. SMS to Stylist
+      if (stylistPhone) {
+        await sendSMS(stylistPhone, `¡Nueva Cita! ✂️\nCliente: ${name}\nFecha: ${date}\nHora: ${time}\nServicio: ${serviceName}\nSucursal: ${branchName}`);
+      }
+
+      // 2. Immediate SMS to Customer
+      if (body.sendReminders) {
+        await sendSMS(phone, `Men & Boys: ¡Cita confirmada! ✂️\nTe esperamos el ${date} a las ${time} en ${branchName}.`);
+      }
+    } catch (smsErr) {
+      console.error("Error sending immediate SMS:", smsErr);
+      // We don't fail the request if SMS fails
+    }
 
     return NextResponse.json({ success: true, eventLink: response.data.htmlLink });
   } catch (error) {
