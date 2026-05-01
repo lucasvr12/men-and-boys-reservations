@@ -1,18 +1,6 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
-
-const CALENDAR_IDS = {
-  carrizalejo: process.env.CALENDAR_ID_CARRIZALEJO,
-  mision: process.env.CALENDAR_ID_MISION,
-  nacional: process.env.CALENDAR_ID_NACIONAL,
-};
-
-// Mapeo de duración de servicio a minutos
-const SERVICE_DURATIONS = {
-  "15min": 15,
-  "30min": 30,
-  "60min": 60,
-};
+import { CALENDAR_IDS, SERVICE_DURATIONS, stylists } from "@/lib/constants";
 
 export async function GET(request) {
   try {
@@ -20,31 +8,27 @@ export async function GET(request) {
     const date = searchParams.get("date"); // YYYY-MM-DD
     const branch = searchParams.get("branch");
     const serviceDuration = searchParams.get("duration") || "30min";
+    const selectedStylistId = searchParams.get("stylist") || "any";
 
     if (!date || !branch) {
       return NextResponse.json({ error: "Faltan parámetros." }, { status: 400 });
     }
 
     const calendarId = CALENDAR_IDS[branch];
-    // Si no hay credenciales, vamos a simular horarios disponibles (útil para que la app no falle mientras el usuario configura el .env)
     const hasCredentials = process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_CLIENT_EMAIL && calendarId;
 
     const targetDate = new Date(`${date}T00:00:00-06:00`);
-    const dayOfWeek = targetDate.getDay(); // 0 = Sunday, 1 = Monday, 6 = Saturday
+    const dayOfWeek = targetDate.getDay();
 
     if (dayOfWeek === 0) {
       return NextResponse.json({ availableSlots: [], message: "Cerrado los Domingos" });
     }
 
     const openingHour = 10;
-    const closingHour = dayOfWeek === 6 ? 19 : 20; // 19:00 for Sat, 20:00 for Mon-Fri
+    const closingHour = dayOfWeek === 6 ? 19 : 20;
 
-    // Generate all possible 30-minute slots
     const slots = [];
     const durationMins = SERVICE_DURATIONS[serviceDuration] || 30;
-    
-    // Si la duración es mayor a 30 min (ej 60min), no podemos agendar a las 19:30 si cerramos a las 20:00
-    // Calculamos el último slot posible
     const lastPossibleStartMin = (closingHour * 60) - durationMins;
 
     for (let h = openingHour; h < closingHour; h++) {
@@ -57,8 +41,7 @@ export async function GET(request) {
       }
     }
 
-    // Now, get FreeBusy from Google Calendar
-    let busyPeriods = [];
+    let events = [];
     if (hasCredentials) {
       const auth = new google.auth.GoogleAuth({
         credentials: {
@@ -69,45 +52,72 @@ export async function GET(request) {
       });
 
       const calendar = google.calendar({ version: "v3", auth });
-      
-      const timeMin = new Date(`${date}T00:00:00-06:00`);
-      const timeMax = new Date(`${date}T23:59:59-06:00`);
+      const timeMin = new Date(`${date}T00:00:00-06:00`).toISOString();
+      const timeMax = new Date(`${date}T23:59:59-06:00`).toISOString();
 
-      const freeBusyRes = await calendar.freebusy.query({
-        requestBody: {
-          timeMin: timeMin.toISOString(),
-          timeMax: timeMax.toISOString(),
-          timeZone: "America/Monterrey",
-          items: [{ id: calendarId }],
-        },
+      const response = await calendar.events.list({
+        calendarId: calendarId,
+        timeMin,
+        timeMax,
+        singleEvents: true,
       });
-
-      const calendars = freeBusyRes.data.calendars;
-      if (calendars && calendars[calendarId]) {
-        busyPeriods = calendars[calendarId].busy;
-      }
+      events = response.data.items || [];
     }
 
-    // Filter slots that overlap with busy periods
+    // Get the list of real stylists for this branch
+    const branchStylists = stylists.filter(s => s.branch === branch && s.canTakeAppointments);
+    const totalStylistsCount = branchStylists.length;
+
     const availableSlots = slots.filter((slotTime) => {
       const slotStart = new Date(`${date}T${slotTime}:00-06:00`);
       const slotEnd = new Date(slotStart.getTime() + durationMins * 60000);
 
-      // Check if this slot overlaps with any busy period
-      const isOverlapping = busyPeriods.some((busy) => {
-        const busyStart = new Date(busy.start);
-        const busyEnd = new Date(busy.end);
-        
-        return (slotStart < busyEnd && slotEnd > busyStart);
+      // Past check
+      const now = new Date();
+      if (slotStart < now) return false;
+
+      // Find which stylists are busy at this time
+      const busyStylistsNames = new Set();
+      
+      events.forEach(event => {
+        const eventStart = new Date(event.start.dateTime || event.start.date);
+        const eventEnd = new Date(event.end.dateTime || event.end.date);
+
+        // Check for overlap
+        if (slotStart < eventEnd && slotEnd > eventStart) {
+          const description = event.description || "";
+          const summary = event.summary || "";
+          
+          // Try to find stylist name in description or summary (for blockings)
+          let stylistName = null;
+          const stylistMatch = description.match(/(?:Estilista|Barbero):\s*(.*)/);
+          if (stylistMatch) {
+            stylistName = stylistMatch[1].trim();
+          } else {
+            // Check for blocking events like "COMIDA: Laura" or "VACACIONES: Laura"
+            const blockingMatch = summary.match(/(?:COMIDA|VACACIONES|BLOQUEO):\s*(.*)/i);
+            if (blockingMatch) {
+              stylistName = blockingMatch[1].trim();
+            }
+          }
+
+          if (stylistName) {
+            busyStylistsNames.add(stylistName);
+          } else {
+            // If it's a general block or unknown, we could count it as one busy person
+            // For now, let's assume all relevant events have a stylist name
+          }
+        }
       });
 
-      // Filter out past slots if the date is today
-      const now = new Date();
-      if (slotStart < now) {
-        return false;
+      if (selectedStylistId === "any") {
+        // "Sin preferencia": available if at least one stylist is free
+        return busyStylistsNames.size < totalStylistsCount;
+      } else {
+        // Specific stylist: available if THEY are not busy
+        const selectedStylist = stylists.find(s => s.id === selectedStylistId);
+        return !busyStylistsNames.has(selectedStylist?.name);
       }
-
-      return !isOverlapping;
     });
 
     return NextResponse.json({ availableSlots });

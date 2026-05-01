@@ -18,7 +18,7 @@ const SERVICE_DURATIONS = {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { name, phone, date, time, branch, service, barberName, branchName, serviceName } = body;
+    const { name, phone, date, time, branch, service, stylistName, branchName, serviceName } = body;
 
     const calendarId = CALENDAR_IDS[branch];
     if (!calendarId) {
@@ -48,7 +48,7 @@ export async function POST(req) {
 
     const event = {
       summary: `Cita: ${name} - ${serviceName}`,
-      description: `Cliente: ${name}\nTeléfono: ${phone}\nBarbero: ${barberName}\nServicio: ${serviceName}\nSucursal: ${branchName}`,
+      description: `Cliente: ${name}\nTeléfono: ${phone}\nEstilista: ${stylistName}\nServicio: ${serviceName}\nSucursal: ${branchName}`,
       start: {
         dateTime: startDateTime.toISOString(),
         timeZone: "America/Monterrey",

@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { MapPin, Clock, User, Calendar as CalendarIcon, CheckCircle, ChevronRight, ArrowLeft } from "lucide-react";
-
-const branches = [
-  { id: "carrizalejo", name: "Carrizalejo", address: "Sucursal Carrizalejo, NL" },
-  { id: "mision", name: "Misión del Valle", address: "Sucursal Misión del Valle, NL" },
-  { id: "nacional", name: "Carretera Nacional", address: "Sucursal Carretera Nacional, NL" },
-];
+import { branches, stylists } from "@/lib/constants";
 
 const services = [
   { id: "15min", name: "Corte Rápido", duration: "15 min", price: "$150" },
@@ -15,19 +10,12 @@ const services = [
   { id: "60min", name: "Servicio Completo", duration: "1 hora", price: "$400" },
 ];
 
-const barbers = [
-  { id: "any", name: "Sin preferencia", img: "https://ui-avatars.com/api/?name=Cualquier+Barbero&background=333&color=fff" },
-  { id: "b1", name: "Barbero 1", img: "https://ui-avatars.com/api/?name=Barbero+1&background=111&color=cc0000" },
-  { id: "b2", name: "Barbero 2", img: "https://ui-avatars.com/api/?name=Barbero+2&background=111&color=cc0000" },
-  { id: "b3", name: "Barbero 3", img: "https://ui-avatars.com/api/?name=Barbero+3&background=111&color=cc0000" },
-];
-
 export default function Home() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     branch: "",
     service: "",
-    barber: "",
+    stylist: "",
     name: "",
     phone: "",
     date: "",
@@ -53,7 +41,7 @@ export default function Home() {
     setIsLoadingTimes(true);
     setClosedMessage("");
     try {
-      const res = await fetch(`/api/availability?date=${selectedDate}&branch=${formData.branch}&duration=${formData.service}`);
+      const res = await fetch(`/api/availability?date=${selectedDate}&branch=${formData.branch}&duration=${formData.service}&stylist=${formData.stylist}`);
       const data = await res.json();
       if (data.message) {
         setClosedMessage(data.message);
@@ -78,8 +66,8 @@ export default function Home() {
     nextStep();
   };
 
-  const handleBarberSelect = (id) => {
-    updateData("barber", id);
+  const handleStylistSelect = (id) => {
+    updateData("stylist", id);
     nextStep();
   };
 
@@ -95,7 +83,7 @@ export default function Home() {
           ...formData,
           branchName: branches.find(b => b.id === formData.branch)?.name,
           serviceName: services.find(s => s.id === formData.service)?.name,
-          barberName: barbers.find(b => b.id === formData.barber)?.name,
+          stylistName: stylists.find(s => s.id === formData.stylist)?.name,
         }),
       });
 
@@ -121,7 +109,7 @@ export default function Home() {
           <div className="flex justify-between text-xs font-semibold text-gray-400 mb-2 font-['Oswald'] tracking-wider">
             <span className={step >= 1 ? "text-mbRed" : ""}>SUCURSAL</span>
             <span className={step >= 2 ? "text-mbRed" : ""}>SERVICIO</span>
-            <span className={step >= 3 ? "text-mbRed" : ""}>BARBERO</span>
+            <span className={step >= 3 ? "text-mbRed" : ""}>ESTILISTA</span>
             <span className={step >= 4 ? "text-mbRed" : ""}>DATOS</span>
           </div>
           <div className="h-1 bg-white/10 rounded-full overflow-hidden">
@@ -193,31 +181,33 @@ export default function Home() {
         </div>
       )}
 
-      {/* STEP 3: BARBERO */}
+      {/* STEP 3: ESTILISTA */}
       {step === 3 && (
         <div className="space-y-6 animate-slide-up">
           <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
             <ArrowLeft className="w-4 h-4 mr-1" /> Volver
           </button>
           <div className="text-center mb-10">
-            <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu barbero</h2>
+            <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu estilista</h2>
             <p className="text-gray-400">Si no tienes preferencia, asignaremos al primero disponible.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {barbers.map((barber) => (
-              <button
-                key={barber.id}
-                onClick={() => handleBarberSelect(barber.id)}
-                className={`flex flex-col items-center p-6 border rounded-xl transition-all duration-300 hover:-translate-y-1 ${
-                  formData.barber === barber.id
-                    ? "border-mbRed bg-mbRed/10"
-                    : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"
-                }`}
-              >
-                <img src={barber.img} alt={barber.name} className="w-20 h-20 rounded-full mb-4 object-cover border-2 border-transparent" />
-                <h3 className="font-bold font-['Oswald'] uppercase text-center">{barber.name}</h3>
-              </button>
-            ))}
+            {stylists
+              .filter(s => s.branch === "all" || s.branch === formData.branch)
+              .map((stylist) => (
+                <button
+                  key={stylist.id}
+                  onClick={() => handleStylistSelect(stylist.id)}
+                  className={`flex flex-col items-center p-6 border rounded-xl transition-all duration-300 hover:-translate-y-1 ${
+                    formData.stylist === stylist.id
+                      ? "border-mbRed bg-mbRed/10"
+                      : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"
+                  }`}
+                >
+                  <img src={stylist.img} alt={stylist.name} className="w-20 h-20 rounded-full mb-4 object-cover border-2 border-transparent" />
+                  <h3 className="font-bold font-['Oswald'] uppercase text-center">{stylist.name}</h3>
+                </button>
+              ))}
           </div>
         </div>
       )}
@@ -245,8 +235,8 @@ export default function Home() {
                 <span className="font-bold">{services.find(s => s.id === formData.service)?.name} ({services.find(s => s.id === formData.service)?.duration})</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Barbero:</span>
-                <span className="font-bold">{barbers.find(b => b.id === formData.barber)?.name}</span>
+                <span className="text-gray-400">Estilista:</span>
+                <span className="font-bold">{stylists.find(s => s.id === formData.stylist)?.name}</span>
               </div>
             </div>
           </div>
@@ -373,7 +363,7 @@ export default function Home() {
           <button
             onClick={() => {
               setStep(1);
-              setFormData({ branch: "", service: "", barber: "", name: "", phone: "", date: "", time: "" });
+              setFormData({ branch: "", service: "", stylist: "", name: "", phone: "", date: "", time: "" });
             }}
             className="text-mbRed hover:text-red-400 font-bold transition-colors font-['Oswald'] uppercase tracking-wider"
           >

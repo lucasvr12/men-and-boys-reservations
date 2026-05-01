@@ -1,17 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Clock, User, MapPin, Search } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X } from "lucide-react";
+import { branches, stylists } from "@/lib/constants";
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   
+  const [activeTab, setActiveTab] = useState("appointments"); // "appointments" or "staff"
   const [appointments, setAppointments] = useState([]);
-  const [filterDate, setFilterDate] = useState("");
+  const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Edit State
+  const [editingApp, setEditingApp] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Block State
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [blockData, setBlockData] = useState({
+    stylistName: "",
+    type: "comida",
+    date: new Date().toISOString().split("T")[0],
+    time: "14:00",
+    duration: 60,
+    branch: "mision"
+  });
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -23,32 +40,78 @@ export default function AdminDashboard() {
     }
   };
 
-  // Fetch appointments when component mounts or filterDate changes
+  const fetchAppointments = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const url = filterDate ? `/api/admin/appointments?date=${filterDate}` : '/api/admin/appointments';
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || "Error al cargar las citas");
+      
+      setAppointments(data.appointments || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAppointments = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const url = filterDate ? `/api/admin/appointments?date=${filterDate}` : '/api/admin/appointments';
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        if (!res.ok) {
-          throw new Error(data.error || "Error al cargar las citas");
-        }
-        
-        setAppointments(data.appointments || []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (isAuthenticated) fetchAppointments();
+  }, [filterDate, isAuthenticated]);
 
-    fetchAppointments();
-  }, [filterDate]);
+  const handleDelete = async (id, branch) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar esta cita?")) return;
+    
+    try {
+      const res = await fetch(`/api/admin/appointments/${id}`, {
+        method: "DELETE",
+        body: JSON.stringify({ branch }),
+      });
+      if (!res.ok) throw new Error("Error al eliminar");
+      fetchAppointments();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
-  const filteredAppointments = appointments;
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    try {
+      const res = await fetch(`/api/admin/appointments/${editingApp.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(editingApp),
+      });
+      if (!res.ok) throw new Error("Error al actualizar");
+      setEditingApp(null);
+      fetchAppointments();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCreateBlock = async (e) => {
+    e.preventDefault();
+    setIsBlocking(true);
+    try {
+      const res = await fetch("/api/admin/staff/block", {
+        method: "POST",
+        body: JSON.stringify(blockData),
+      });
+      if (!res.ok) throw new Error("Error al crear bloqueo");
+      alert("Bloqueo creado con éxito");
+      fetchAppointments();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsBlocking(false);
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -59,23 +122,18 @@ export default function AdminDashboard() {
             <p className="text-gray-400 mt-2">Solo personal autorizado de Men & Boys</p>
           </div>
           <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="password"
-                placeholder="Ingresa la contraseña"
-                className="w-full bg-black/50 border border-white/20 rounded-lg p-3 text-white focus:border-mbRed outline-none transition-colors pr-10"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoFocus
-              />
-            </div>
-            {loginError && <p className="text-mbRed text-sm animate-shake">{loginError}</p>}
+            <input
+              type="password"
+              placeholder="Ingresa la contraseña"
+              className="w-full bg-black/50 border border-white/20 rounded-lg p-3 text-white focus:border-mbRed outline-none transition-colors"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoFocus
+            />
+            {loginError && <p className="text-mbRed text-sm">{loginError}</p>}
           </div>
-          <button 
-            type="submit" 
-            className="w-full bg-mbRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors uppercase tracking-widest shadow-lg shadow-mbRed/20"
-          >
-            Acceder al Panel
+          <button type="submit" className="w-full bg-mbRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors uppercase tracking-widest">
+            Acceder
           </button>
         </form>
       </div>
@@ -84,74 +142,253 @@ export default function AdminDashboard() {
 
   return (
     <div className="animate-fade-in space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6">
         <div>
-          <h1 className="text-3xl font-['Oswald'] font-bold uppercase">Panel de Staff</h1>
-          <p className="text-gray-400">Administra las citas de Men & Boys.</p>
+          <h1 className="text-3xl font-['Oswald'] font-bold uppercase">Panel de Control</h1>
+          <div className="flex gap-4 mt-4">
+            <button 
+              onClick={() => setActiveTab("appointments")}
+              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'appointments' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+            >
+              CITAS
+            </button>
+            <button 
+              onClick={() => setActiveTab("staff")}
+              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'staff' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+            >
+              GESTIÓN STAFF
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-black/50 border border-white/20 rounded-lg p-2">
-          <Search className="w-5 h-5 text-gray-500 ml-2" />
-          <input
-            type="date"
-            className="bg-transparent border-none focus:ring-0 text-sm [color-scheme:dark]"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-          />
-        </div>
+
+        {activeTab === 'appointments' && (
+          <div className="flex items-center gap-2 bg-black/50 border border-white/20 rounded-lg p-2">
+            <Search className="w-5 h-5 text-gray-500 ml-2" />
+            <input
+              type="date"
+              className="bg-transparent border-none focus:ring-0 text-sm [color-scheme:dark]"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
-      {isLoading ? (
-        <div className="text-center py-20 text-gray-500 flex flex-col items-center">
-          <div className="w-10 h-10 border-4 border-mbRed border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p>Conectando con Google Calendar...</p>
-        </div>
-      ) : error ? (
-        <div className="bg-red-500/10 border border-red-500/20 text-mbRed p-6 rounded-xl text-center">
-          <h3 className="font-bold mb-2">Aviso</h3>
-          <p>{error}</p>
-          <p className="text-sm mt-2 opacity-80">Por favor configura las credenciales de Google Cloud en el archivo .env.local</p>
-        </div>
-      ) : filteredAppointments.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
-          <CalendarIcon className="w-16 h-16 mx-auto mb-4 opacity-20" />
-          <p>No hay citas registradas {filterDate ? "para esta fecha" : ""}.</p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {filteredAppointments.map((app) => (
-            <div
-              key={app.id}
-              className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/30 transition-colors"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-mbRed/20 text-mbRed rounded-full flex items-center justify-center font-bold">
-                  {app.time.split(":")[0]}
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide">
-                    {app.name}
-                  </h3>
-                  <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-sm text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" /> {app.time} ({app.date})
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" /> {app.branch}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <User className="w-4 h-4" /> {app.barber}
-                    </span>
+      {activeTab === 'appointments' ? (
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="text-center py-20"><div className="w-10 h-10 border-4 border-mbRed border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>Cargando...</div>
+          ) : appointments.length === 0 ? (
+            <div className="text-center py-20 text-gray-500">No hay citas para este día.</div>
+          ) : (
+            <div className="grid gap-4">
+              {appointments.map((app) => (
+                <div key={app.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/30 transition-colors">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-mbRed/20 text-mbRed rounded-full flex items-center justify-center font-bold">
+                      {app.time.split(":")[0]}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide flex items-center gap-2">
+                        {app.name}
+                        {app.name.includes("COMIDA") && <Coffee className="w-4 h-4 text-yellow-500" />}
+                        {app.name.includes("VACACIONES") && <Umbrella className="w-4 h-4 text-mbRed" />}
+                      </h3>
+                      <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-sm text-gray-400">
+                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {app.time}</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {app.branch}</span>
+                        <span className="flex items-center gap-1"><User className="w-4 h-4" /> {app.stylist}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setEditingApp(app)}
+                      className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all"
+                      title="Editar"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(app.id, app.branch)}
+                      className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="inline-block px-3 py-1 bg-white/10 rounded-full text-xs font-bold mb-2">
-                  {app.service}
-                </div>
-                <div className="text-gray-500 text-sm">{app.phone}</div>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Block Form */}
+          <div className="bg-white/5 border border-white/10 p-8 rounded-2xl space-y-6">
+            <h2 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-2">
+              <PlusCircle className="text-mbRed" /> Bloquear Horario
+            </h2>
+            <form onSubmit={handleCreateBlock} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Sucursal</label>
+                <select 
+                  className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white"
+                  value={blockData.branch}
+                  onChange={e => setBlockData({...blockData, branch: e.target.value})}
+                >
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Estilista</label>
+                <select 
+                  className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white"
+                  value={blockData.stylistName}
+                  onChange={e => setBlockData({...blockData, stylistName: e.target.value})}
+                  required
+                >
+                  <option value="">Selecciona...</option>
+                  {stylists.filter(s => s.branch === blockData.branch || s.branch === 'all').map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Tipo</label>
+                  <select 
+                    className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white"
+                    value={blockData.type}
+                    onChange={e => setBlockData({...blockData, type: e.target.value})}
+                  >
+                    <option value="comida">Comida</option>
+                    <option value="vacaciones">Vacaciones</option>
+                    <option value="bloqueo">Otro Bloqueo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Duración (min)</label>
+                  <input 
+                    type="number" 
+                    className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white"
+                    value={blockData.duration}
+                    onChange={e => setBlockData({...blockData, duration: parseInt(e.target.value)})}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Fecha</label>
+                  <input 
+                    type="date" 
+                    className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white [color-scheme:dark]"
+                    value={blockData.date}
+                    onChange={e => setBlockData({...blockData, date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Hora Inicio</label>
+                  <input 
+                    type="time" 
+                    className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white [color-scheme:dark]"
+                    value={blockData.time}
+                    onChange={e => setBlockData({...blockData, time: e.target.value})}
+                  />
+                </div>
+              </div>
+              <button 
+                type="submit" 
+                disabled={isBlocking}
+                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all"
+              >
+                {isBlocking ? "Bloqueando..." : "Crear Bloqueo"}
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 p-8 rounded-2xl">
+            <h2 className="text-xl font-['Oswald'] font-bold uppercase mb-6">Staff por Sucursal</h2>
+            <div className="space-y-6">
+              {branches.map(branch => (
+                <div key={branch.id}>
+                  <h4 className="text-mbRed font-bold text-sm mb-3 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" /> {branch.name}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {stylists.filter(s => s.branch === branch.id).map(s => (
+                      <div key={s.id} className="bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+                        <img src={s.img} className="w-6 h-6 rounded-full" alt="" />
+                        {s.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingApp && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-[#111] border border-white/10 w-full max-w-lg rounded-2xl p-8 relative animate-scale-in">
+            <button onClick={() => setEditingApp(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-2xl font-['Oswald'] font-bold uppercase mb-6">Editar Cita</h2>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Fecha</label>
+                  <input 
+                    type="date" 
+                    className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white [color-scheme:dark]"
+                    value={editingApp.date}
+                    onChange={e => setEditingApp({...editingApp, date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Hora</label>
+                  <input 
+                    type="time" 
+                    className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white [color-scheme:dark]"
+                    value={editingApp.time}
+                    onChange={e => setEditingApp({...editingApp, time: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Estilista</label>
+                <select 
+                  className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white"
+                  value={editingApp.stylist}
+                  onChange={e => setEditingApp({...editingApp, stylist: e.target.value, stylistName: e.target.value})}
+                >
+                  {stylists.filter(s => s.branch === editingApp.branch.toLowerCase() || s.branch === 'all').map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="pt-4 flex gap-4">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingApp(null)}
+                  className="flex-1 bg-white/5 border border-white/10 py-3 rounded-lg font-bold"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isUpdating}
+                  className="flex-1 bg-mbRed text-white py-3 rounded-lg font-bold hover:bg-red-700"
+                >
+                  {isUpdating ? "Guardando..." : "Guardar Cambios"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

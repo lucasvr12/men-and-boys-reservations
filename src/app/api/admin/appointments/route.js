@@ -64,14 +64,14 @@ export async function GET(request) {
           // Extraer información de la descripción que guardamos antes
           const description = event.description || "";
           
-          // Parsear la descripción para sacar el teléfono, barbero y servicio
+          // Parsear la descripción para sacar el teléfono, estilista y servicio
           const getMatch = (regex) => {
             const match = description.match(regex);
             return match ? match[1].trim() : "No especificado";
           };
 
-          const phone = getMatch(/Teléfono:\s*(.*)/);
-          const barber = getMatch(/Barbero:\s*(.*)/);
+           const phone = getMatch(/Teléfono:\s*(.*)/);
+          const stylist = getMatch(/(?:Estilista|Barbero):\s*(.*)/);
           const service = getMatch(/Servicio:\s*(.*)/);
           
           // Obtener nombre del cliente del Summary o de la descripción
@@ -88,9 +88,9 @@ export async function GET(request) {
             phone,
             date: formattedDate,
             time: formattedTime,
-            branch: branchName,
+             branch: branchName,
             service,
-            barber,
+            stylist,
           });
         });
       } catch (err) {

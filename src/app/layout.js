@@ -16,14 +16,8 @@ export default function RootLayout({ children }) {
       <body className="font-['Inter',sans-serif] antialiased">
         <header className="bg-black/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {/* Logo Placeholder */}
-              <div className="w-10 h-10 bg-mbRed rounded flex items-center justify-center font-['Oswald'] font-bold text-xl text-white">
-                M&B
-              </div>
-              <span className="font-['Oswald'] font-bold text-2xl tracking-wider">
-                MEN<span className="text-mbRed">&</span>BOYS
-              </span>
+            <div className="flex items-center py-2">
+              <img src="/logo.jpg" alt="Men & Boys" className="h-14 md:h-16 w-auto object-contain" />
             </div>
             <nav>
               <a href="/admin" className="text-sm text-gray-400 hover:text-white transition-colors">
