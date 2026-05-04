@@ -20,9 +20,12 @@ export default function RootLayout({ children }) {
             <Link href="/" className="flex items-center py-2 hover:opacity-80 transition-opacity">
               <img src="/logo.jpg" alt="Men & Boys" className="h-14 md:h-16 w-auto object-contain" />
             </Link>
-            <nav>
+            <nav className="flex items-center gap-6">
+              <Link href="/staff" className="text-sm text-gray-400 hover:text-white transition-colors">
+                Mi Agenda
+              </Link>
               <a href="/admin" className="text-sm text-gray-400 hover:text-white transition-colors">
-                Staff
+                Admin
               </a>
             </nav>
           </div>
