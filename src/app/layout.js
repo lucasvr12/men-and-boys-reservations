@@ -21,11 +21,8 @@ export default function RootLayout({ children }) {
               <img src="/logo.jpg" alt="Men & Boys" className="h-14 md:h-16 w-auto object-contain" />
             </Link>
             <nav className="flex items-center gap-6">
-              <Link href="/staff" className="text-sm text-gray-400 hover:text-white transition-colors">
-                Mi Agenda
-              </Link>
               <a href="/admin" className="text-sm text-gray-400 hover:text-white transition-colors">
-                Admin
+                Staff
               </a>
             </nav>
           </div>

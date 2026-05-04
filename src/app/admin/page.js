@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X, ChevronLeft, ChevronRight as ChevronRightIcon, CheckCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X, ChevronLeft, ChevronRight as ChevronRightIcon, CheckCircle, Users } from "lucide-react";
 import { branches, stylists } from "@/lib/constants";
 
 export default function AdminDashboard() {
@@ -9,7 +9,15 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   
-  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff", "profiles"
+  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff", "profiles", "agenda"
+
+  // Personal Agenda State
+  const [agendaMode, setAgendaMode] = useState("personal"); // "personal" | "branch"
+  const [agendaSelectedStylist, setAgendaSelectedStylist] = useState("");
+  const [agendaSelectedBranch, setAgendaSelectedBranch] = useState("carrizalejo");
+  const [agendaViewDate, setAgendaViewDate] = useState(new Date());
+  const [agendaSelectedDate, setAgendaSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [agendaDayApps, setAgendaDayApps] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [allMonthlyAppointments, setAllMonthlyAppointments] = useState([]);
   const [stylistSettings, setStylistSettings] = useState({});
@@ -246,6 +254,12 @@ export default function AdminDashboard() {
             >
               PERFILES STAFF
             </button>
+            <button 
+              onClick={() => setActiveTab("agenda")}
+              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'agenda' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+            >
+              MI AGENDA
+            </button>
           </div>
         </div>
       </div>
@@ -398,6 +412,165 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
+        </div>
+      ) : activeTab === 'agenda' ? (
+        <div className="space-y-8 animate-slide-up">
+          {/* Mode Selector */}
+          <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 gap-1 max-w-sm">
+            <button
+              onClick={() => setAgendaMode("personal")}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${agendaMode === "personal" ? "bg-mbRed text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
+            >
+              <User className="w-4 h-4" /> Mi Agenda
+            </button>
+            <button
+              onClick={() => setAgendaMode("branch")}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${agendaMode === "branch" ? "bg-mbRed text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
+            >
+              <Users className="w-4 h-4" /> Agenda Sucursal
+            </button>
+          </div>
+
+          {/* Selector */}
+          {agendaMode === "personal" ? (
+            <div className="max-w-sm space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2 font-bold uppercase tracking-widest">¿Quién eres?</label>
+                <select
+                  className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-white focus:border-mbRed outline-none transition-colors"
+                  value={agendaSelectedStylist}
+                  onChange={e => setAgendaSelectedStylist(e.target.value)}
+                >
+                  <option value="">Selecciona tu nombre...</option>
+                  {stylists.filter(s => s.canTakeAppointments).map(s => (
+                    <option key={s.id} value={s.id}>{s.name} — {branches.find(b => b.id === s.branch)?.name}</option>
+                  ))}
+                </select>
+              </div>
+              {agendaSelectedStylist && (() => {
+                const s = stylists.find(st => st.id === agendaSelectedStylist);
+                return (
+                  <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-xl animate-fade-in">
+                    <img src={s.img} className="w-14 h-14 rounded-full" alt={s.name} />
+                    <div>
+                      <p className="font-bold font-['Oswald'] text-xl uppercase">{s.name}</p>
+                      <p className="text-sm text-gray-400 flex items-center gap-1"><MapPin className="w-3 h-3" /> {branches.find(b => b.id === s.branch)?.name}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="max-w-sm">
+              <label className="block text-sm text-gray-400 mb-2 font-bold uppercase tracking-widest">Sucursal</label>
+              <div className="grid grid-cols-3 gap-2">
+                {branches.map(b => (
+                  <button key={b.id} onClick={() => setAgendaSelectedBranch(b.id)}
+                    className={`p-3 rounded-xl border text-sm font-bold transition-all ${agendaSelectedBranch === b.id ? "bg-mbRed border-mbRed text-white" : "bg-white/5 border-white/10 text-gray-400 hover:border-white/30"}`}>
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Agenda Calendar */}
+          {(agendaMode === "branch" || (agendaMode === "personal" && agendaSelectedStylist)) && (() => {
+            const getAgendaDayApps = (fullDate) => {
+              let filtered = allMonthlyAppointments.filter(a => a.date === fullDate);
+              if (agendaMode === "branch") {
+                filtered = filtered.filter(a => a.branch?.toLowerCase().includes(agendaSelectedBranch) || a.branch === branches.find(b => b.id === agendaSelectedBranch)?.name);
+              } else if (agendaSelectedStylist) {
+                const stylistName = stylists.find(s => s.id === agendaSelectedStylist)?.name;
+                filtered = filtered.filter(a => a.stylist === stylistName || a.stylist === "Sin preferencia");
+              }
+              return filtered;
+            };
+
+            const renderAgendaCalendar = () => {
+              const year = agendaViewDate.getFullYear();
+              const month = agendaViewDate.getMonth();
+              const firstDay = new Date(year, month, 1).getDay();
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const days = [];
+              for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) {
+                days.push(<div key={`e-${i}`} className="h-14 md:h-20 border border-white/5 bg-white/[0.01]" />);
+              }
+              for (let d = 1; d <= daysInMonth; d++) {
+                const fullDate = `${year}-${(month + 1).toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
+                const dayApps = getAgendaDayApps(fullDate);
+                const isSelected = agendaSelectedDate === fullDate;
+                const isToday = new Date().toISOString().split("T")[0] === fullDate;
+                days.push(
+                  <button key={d} onClick={() => setAgendaSelectedDate(fullDate)}
+                    className={`h-14 md:h-20 border border-white/10 p-1 md:p-2 text-left transition-all hover:bg-white/10 ${isSelected ? "bg-mbRed/30 border-mbRed/60" : "bg-white/5"} ${isToday ? "ring-2 ring-mbRed/40 ring-inset" : ""}`}>
+                    <span className={`text-xs font-bold ${isSelected ? "text-white" : "text-gray-400"}`}>{d}</span>
+                    {dayApps.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-0.5">
+                        {dayApps.slice(0, 6).map((_, i) => <div key={i} className="w-1.5 h-1.5 rounded-full bg-mbRed" />)}
+                        {dayApps.length > 6 && <span className="text-[8px] text-mbRed font-bold">+{dayApps.length - 6}</span>}
+                      </div>
+                    )}
+                  </button>
+                );
+              }
+              return days;
+            };
+
+            const selectedDayApps = getAgendaDayApps(agendaSelectedDate);
+
+            return (
+              <div className="space-y-6">
+                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                  <div className="p-5 bg-black/40 flex items-center justify-between border-b border-white/10">
+                    <h2 className="text-lg font-['Oswald'] font-bold uppercase flex items-center gap-2 capitalize text-white">
+                      <CalendarIcon className="w-5 h-5 text-mbRed" />
+                      {agendaViewDate.toLocaleString('es-MX', { month: 'long', year: 'numeric' })}
+                    </h2>
+                    <div className="flex gap-1">
+                      <button onClick={() => setAgendaViewDate(new Date(agendaViewDate.setMonth(agendaViewDate.getMonth() - 1)))} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+                      <button onClick={() => setAgendaViewDate(new Date())} className="px-3 py-1 text-xs font-bold bg-mbRed/20 text-mbRed rounded-lg hover:bg-mbRed/30 transition-colors">HOY</button>
+                      <button onClick={() => setAgendaViewDate(new Date(agendaViewDate.setMonth(agendaViewDate.getMonth() + 1)))} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-7 gap-px bg-white/10">
+                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => (
+                      <div key={d} className="bg-black/60 py-2 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest">{d}</div>
+                    ))}
+                    {renderAgendaCalendar()}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-['Oswald'] font-bold uppercase text-white">
+                    {new Date(agendaSelectedDate + "T00:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                  </h3>
+                  {selectedDayApps.length === 0 ? (
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center text-gray-500 italic">Sin citas para este día.</div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {selectedDayApps.sort((a, b) => a.time.localeCompare(b.time)).map((app, i) => (
+                        <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5 flex items-center gap-4 hover:border-white/20 transition-all">
+                          <div className="w-14 h-14 bg-mbRed/20 text-mbRed rounded-xl flex flex-col items-center justify-center font-bold font-['Oswald'] shrink-0">
+                            <span className="text-xl leading-none">{app.time.split(":")[0]}</span>
+                            <span className="text-[10px]">:{app.time.split(":")[1]}</span>
+                          </div>
+                          <div>
+                            <p className="font-bold font-['Oswald'] uppercase text-lg leading-tight text-white">{app.name}</p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-400">
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-mbRed/60" /> {app.time}</span>
+                              <span className="flex items-center gap-1"><User className="w-3 h-3 text-mbRed/60" /> {app.stylist}</span>
+                              {agendaMode === "branch" && <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-mbRed/60" /> {app.branch}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-8 animate-slide-up">
