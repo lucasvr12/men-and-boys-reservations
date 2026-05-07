@@ -19,7 +19,7 @@ const SERVICE_DURATIONS = {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { name, phone, date, time, branch, service, stylistName, branchName, serviceName } = body;
+    const { name, phone, date, time, branch, service, stylist, stylistName, branchName, serviceName } = body;
 
     const calendarId = CALENDAR_IDS[branch];
     if (!calendarId) {
@@ -113,7 +113,7 @@ export async function POST(req) {
         branch,
         stylist,
         service,
-        day: new Date(date).getDay().toString(), // Store preferred day of week
+        day: date ? new Date(date + "T00:00:00").getDay().toString() : "0", // Store preferred day of week
         time
       });
     } catch (sheetErr) {
