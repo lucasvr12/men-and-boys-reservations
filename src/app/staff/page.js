@@ -44,6 +44,7 @@ export default function StaffAgenda() {
   const [editingApp, setEditingApp] = useState(null);
   const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agendaMode, setAgendaMode] = useState("personal"); // personal or branch
   const [quickAppData, setQuickAppData] = useState({
     name: "",
     surname: "",
@@ -70,7 +71,7 @@ export default function StaffAgenda() {
   useEffect(() => {
     filterDay(selectedDate);
     fetchDayTimeline(selectedDate);
-  }, [selectedDate, allAppointments, selectedStylist]);
+  }, [selectedDate, allAppointments, selectedStylist, agendaMode]);
 
   const fetchDayTimeline = async (date) => {
     if (!selectedBranch || !selectedStylist) return;
@@ -107,9 +108,13 @@ export default function StaffAgenda() {
 
   const filterDay = (date) => {
     let filtered = allAppointments.filter(a => a.date === date);
-    const stylistName = stylists.find(s => s.id === selectedStylist)?.name;
-    // Show stylist's appointments or "Sin preferencia"
-    filtered = filtered.filter(a => a.stylist === stylistName || a.stylist === "Sin preferencia");
+    if (agendaMode === "personal") {
+      const stylistName = stylists.find(s => s.id === selectedStylist)?.name;
+      filtered = filtered.filter(a => a.stylist === stylistName || a.stylist === "Sin preferencia");
+    } else {
+      const branchName = branches.find(b => b.id === selectedBranch)?.name;
+      filtered = filtered.filter(a => (a.branch || "").toLowerCase().includes(selectedBranch) || a.branch === branchName);
+    }
     setDayAppointments(filtered);
   };
 
@@ -242,7 +247,15 @@ export default function StaffAgenda() {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const fullDate = `${viewDate.getFullYear()}-${(viewDate.getMonth() + 1).toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
-      const dayApps = allAppointments.filter(a => a.date === fullDate && (a.stylist === stylistName || a.stylist === "Sin preferencia"));
+      
+      let dayApps = [];
+      if (agendaMode === "personal") {
+        dayApps = allAppointments.filter(a => a.date === fullDate && (a.stylist === stylistName || a.stylist === "Sin preferencia"));
+      } else {
+        const branchName = branches.find(b => b.id === selectedBranch)?.name;
+        dayApps = allAppointments.filter(a => a.date === fullDate && ((a.branch || "").toLowerCase().includes(selectedBranch) || a.branch === branchName));
+      }
+
       const isSelected = selectedDate === fullDate;
       const isToday = new Date().toISOString().split("T")[0] === fullDate;
 
@@ -374,11 +387,27 @@ export default function StaffAgenda() {
         </button>
       </div>
 
+      {/* Mode Selector */}
+      <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 gap-1 max-w-sm">
+        <button
+          onClick={() => setAgendaMode("personal")}
+          className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${agendaMode === "personal" ? "bg-mbRed text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
+        >
+          <User className="w-4 h-4" /> Mi Agenda
+        </button>
+        <button
+          onClick={() => setAgendaMode("branch")}
+          className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${agendaMode === "branch" ? "bg-mbRed text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
+        >
+          <Users className="w-4 h-4" /> Agenda Sucursal
+        </button>
+      </div>
+
       {/* 1. AGENDA DEL DÍA */}
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h2 className="text-2xl font-['Oswald'] font-bold uppercase tracking-widest text-mbRed flex items-center gap-2">
-            <Clock className="w-6 h-6" /> Citas de Hoy
+            <Clock className="w-6 h-6" /> {agendaMode === "personal" ? "Mis Citas" : "Citas de la Sucursal"}
           </h2>
           <div className="flex gap-2">
             <button 
@@ -407,6 +436,10 @@ export default function StaffAgenda() {
         ) : (
           <div className="grid gap-3">
             {dayAppointments
+              .filter(app => {
+                if (agendaMode === "personal") return true; // dayAppointments is already filtered for stylist
+                return true; // if in branch mode, it's already filtered for branch in useEffect/filterDay
+              })
               .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
               .map((app, i) => (
                 <div 
