@@ -102,6 +102,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    if (isAuthenticated) {
       fetchAppointments();
       fetchMonthlyAppointments();
       fetchMetrics();
