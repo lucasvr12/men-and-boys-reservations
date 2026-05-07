@@ -124,20 +124,25 @@ export default function StaffAgenda() {
       if (!confirm(confirmMsg)) return;
 
       try {
-        const res = await fetch(`/api/admin/appointments/${app.id}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            branch: app.branch,
-            phone: app.phone,
-            date: app.date,
-            time: app.time,
-            status: action === "noshow" ? "No asistió" : "Cancelada"
-          }),
+        const queryParams = new URLSearchParams({
+          branch: app.branch || "",
+          phone: app.phone || "",
+          date: app.date || "",
+          time: app.time || "",
+          status: action === "noshow" ? "No asistió" : "Cancelada"
+        }).toString();
+
+        const res = await fetch(`/api/admin/appointments/${app.id}?${queryParams}`, {
+          method: "DELETE"
         });
-        if (res.ok) fetchAppointments();
+        if (res.ok) {
+          fetchAppointments();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.details || errData.error || "Error al procesar acción");
+        }
       } catch (e) {
-        alert("Error al procesar acción");
+        alert(e.message || "Error al procesar acción");
       }
     }
   };

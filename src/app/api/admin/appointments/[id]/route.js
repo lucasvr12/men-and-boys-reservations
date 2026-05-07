@@ -19,10 +19,10 @@ export async function DELETE(req, { params }) {
   try {
     const { id } = params;
     const { searchParams } = new URL(req.url);
-    const branch = searchParams.get("branch");
-    const phone = searchParams.get("phone");
-    const date = searchParams.get("date");
-    const time = searchParams.get("time");
+    const branch = searchParams.get("branch") || "";
+    const phone = searchParams.get("phone") || "";
+    const date = searchParams.get("date") || "";
+    const time = searchParams.get("time") || "";
     const status = searchParams.get("status") || "Cancelada";
 
     let branchId = branch.toLowerCase();
@@ -49,7 +49,7 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting event:", error);
-    return NextResponse.json({ error: "Error deleting event" }, { status: 500 });
+    return NextResponse.json({ error: "Error deleting event", details: error.message, stack: error.stack }, { status: 500 });
   }
 }
 

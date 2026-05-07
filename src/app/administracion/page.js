@@ -155,7 +155,11 @@ export default function AdminDashboard() {
       const res = await fetch(`/api/admin/appointments/${app.id}?${queryParams}`, {
         method: "DELETE"
       });
-      if (!res.ok) throw new Error("Error al procesar acción");
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.details || errData.error || "Error al procesar acción");
+      }
       fetchAppointments();
       fetchMonthlyAppointments();
     } catch (err) {
