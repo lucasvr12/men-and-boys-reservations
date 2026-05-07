@@ -23,6 +23,6 @@ export async function GET() {
     return NextResponse.json({ customers: formattedCustomers });
   } catch (error) {
     console.error("Error fetching customers for admin:", error);
-    return NextResponse.json({ error: "Error al obtener clientes de la base de datos interna" }, { status: 500 });
+    return NextResponse.json({ error: "Error al obtener clientes", details: error.message, stack: error.stack }, { status: 500 });
   }
 }

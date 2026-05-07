@@ -18,7 +18,12 @@ async function getAuth() {
 export async function DELETE(req, { params }) {
   try {
     const { id } = params;
-    const { branch, phone, date, time, status = "Cancelada" } = await req.json(); // We need details to update Sheets
+    const { searchParams } = new URL(req.url);
+    const branch = searchParams.get("branch");
+    const phone = searchParams.get("phone");
+    const date = searchParams.get("date");
+    const time = searchParams.get("time");
+    const status = searchParams.get("status") || "Cancelada";
 
     let branchId = branch.toLowerCase();
     if (branch === "Misión del Valle") branchId = "mision";

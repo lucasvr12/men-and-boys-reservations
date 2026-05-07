@@ -25,9 +25,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Metrics State
-  const [metrics, setMetrics] = useState(null);
-  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  // Removed Metrics State
   
   // Customers State
   const [customers, setCustomers] = useState([]);
@@ -90,24 +88,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchMetrics = async () => {
-    setIsLoadingMetrics(true);
-    try {
-      const res = await fetch('/api/admin/metrics');
-      const data = await res.json();
-      if (res.ok) setMetrics(data);
-    } catch (err) {
-      console.error("Error fetching metrics:", err);
-    } finally {
-      setIsLoadingMetrics(false);
-    }
-  };
+  // fetchMetrics removed
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchAppointments();
       fetchMonthlyAppointments();
-      fetchMetrics();
       fetchCustomers();
     }
   }, [filterDate, isAuthenticated]);
@@ -158,21 +144,20 @@ export default function AdminDashboard() {
     if (!confirm(confirmMsg)) return;
     
     try {
-      const res = await fetch(`/api/admin/appointments/${app.id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          branch: app.branch,
-          phone: app.phone,
-          date: app.date,
-          time: app.time,
-          status: status
-        }),
+      const queryParams = new URLSearchParams({
+        branch: app.branch || "",
+        phone: app.phone || "",
+        date: app.date || "",
+        time: app.time || "",
+        status: status
+      }).toString();
+
+      const res = await fetch(`/api/admin/appointments/${app.id}?${queryParams}`, {
+        method: "DELETE"
       });
       if (!res.ok) throw new Error("Error al procesar acción");
       fetchAppointments();
       fetchMonthlyAppointments();
-      fetchMetrics();
     } catch (err) {
       alert(err.message);
     }
@@ -318,12 +303,6 @@ export default function AdminDashboard() {
               className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'profiles' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
             >
               PERFILES STAFF
-            </button>
-            <button 
-              onClick={() => setActiveTab("metrics")}
-              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'metrics' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
-            >
-              MÉTRICAS
             </button>
             <button 
               onClick={() => setActiveTab("clientes")}
@@ -491,120 +470,6 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-        </div>
-      ) : activeTab === 'metrics' ? (
-        <div className="space-y-8 animate-slide-up pb-20">
-          {isLoadingMetrics ? (
-            <div className="text-center py-40">
-              <div className="w-12 h-12 border-4 border-mbRed border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <p className="text-gray-500 font-bold uppercase tracking-widest">Generando reporte de negocio...</p>
-            </div>
-          ) : !metrics ? (
-            <div className="text-center py-40 text-gray-500 italic">No se pudo cargar la información de métricas.</div>
-          ) : (
-            <>
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-lg">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Total Clientes</p>
-                  <p className="text-4xl font-['Oswald'] font-bold text-white">{metrics.totalCustomers}</p>
-                  <div className="mt-4 flex items-center gap-2 text-green-500 text-xs font-bold">
-                    <CheckCircle className="w-3 h-3" /> Base de datos activa
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-lg border-l-4 border-l-mbRed">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Total Citas</p>
-                  <p className="text-4xl font-['Oswald'] font-bold text-white">{metrics.totalAppointments}</p>
-                  <p className="text-xs text-gray-500 mt-4 italic">Histórico acumulado</p>
-                </div>
-                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-lg">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">No Asistieron</p>
-                  <p className="text-4xl font-['Oswald'] font-bold text-yellow-500">{metrics.statusCounts?.["No asistió"] || 0}</p>
-                  <p className="text-xs text-gray-500 mt-4">Requiere seguimiento</p>
-                </div>
-                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-lg">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Canceladas</p>
-                  <p className="text-4xl font-['Oswald'] font-bold text-red-500">{metrics.statusCounts?.["Cancelada"] || 0}</p>
-                  <p className="text-xs text-gray-500 mt-4">Slots liberados</p>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Performance by Branch */}
-                <div className="bg-white/5 border border-white/10 p-8 rounded-3xl space-y-6">
-                  <h3 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-2 text-white">
-                    <MapPin className="text-mbRed" /> Desempeño por Sucursal
-                  </h3>
-                  <div className="space-y-6">
-                    {Object.entries(metrics.branchCounts || {}).sort((a,b) => b[1] - a[1]).map(([name, count]) => (
-                      <div key={name}>
-                        <div className="flex justify-between text-sm mb-2 uppercase font-bold tracking-widest">
-                          <span>{name}</span>
-                          <span className="text-mbRed">{count} citas</span>
-                        </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-mbRed" 
-                            style={{ width: `${(count / metrics.totalAppointments) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Peak Hours */}
-                <div className="bg-white/5 border border-white/10 p-8 rounded-3xl space-y-6">
-                  <h3 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-2 text-white">
-                    <Clock className="text-mbRed" /> Horarios de Mayor Demanda
-                  </h3>
-                  <div className="grid grid-cols-4 gap-2">
-                    {Object.entries(metrics.hourCounts || {}).sort((a,b) => a[0] - b[0]).map(([hour, count]) => (
-                      <div key={hour} className="bg-white/5 p-3 rounded-xl border border-white/5 text-center flex flex-col justify-between">
-                        <span className="text-[10px] font-bold text-gray-500">{hour}:00</span>
-                        <span className="text-xl font-['Oswald'] font-bold text-white mt-1">{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-8">
-                 {/* Top Stylists */}
-                 <div className="bg-white/5 border border-white/10 p-8 rounded-3xl space-y-6 md:col-span-1">
-                  <h3 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-2 text-white">
-                    <User className="text-mbRed" /> Top Estilistas
-                  </h3>
-                  <div className="space-y-4">
-                    {Object.entries(metrics.stylistCounts || {}).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([name, count], i) => (
-                      <div key={name} className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center font-bold text-mbRed">{i+1}</div>
-                        <div className="flex-1">
-                          <p className="text-sm font-bold uppercase">{name}</p>
-                          <p className="text-[10px] text-gray-500 uppercase">{count} reservaciones</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Top Services */}
-                <div className="bg-white/5 border border-white/10 p-8 rounded-3xl space-y-6 md:col-span-2">
-                  <h3 className="text-xl font-['Oswald'] font-bold uppercase flex items-center gap-2 text-white">
-                    <CheckCircle className="text-mbRed" /> Servicios Populares
-                  </h3>
-                  <div className="flex flex-wrap gap-4">
-                    {Object.entries(metrics.serviceCounts || {}).sort((a,b) => b[1] - a[1]).map(([name, count]) => (
-                      <div key={name} className="bg-mbRed/10 border border-mbRed/20 p-6 rounded-2xl flex-1 min-w-[150px] text-center">
-                        <p className="text-3xl font-['Oswald'] font-bold text-white mb-1">{count}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{name}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
         </div>
       ) : activeTab === 'clientes' ? (
         <div className="space-y-8 animate-slide-up pb-20">
