@@ -481,7 +481,7 @@ export default function Home() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Servicio:</span>
-                <span className="font-bold">{services.find(s => s.id === formData.service)?.name || "No seleccionado"}</span>
+                <span className="font-bold">{servicesCatalog.find(s => s.id === formData.service)?.name || "No seleccionado"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Estilista:</span>
