@@ -267,21 +267,48 @@ export default function Home() {
             <h1 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu sucursal</h1>
             <p className="text-gray-400">Selecciona la ubicación más cercana a ti en Nuevo León.</p>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            {branches.map((branch) => (
+          <div className="grid grid-cols-1 gap-4">
+            {branches.map((branch) => {
+              const branchImages = {
+                carrizalejo: "/branches/carrizalejo.jpg",
+                mision: "/branches/mision.jpg",
+                nacional: "/branches/nacional.jpg",
+              };
+              const imgSrc = branchImages[branch.id];
+              return (
               <button
                 key={branch.id}
                 onClick={() => handleBranchSelect(branch.id)}
-                className={`flex flex-col items-center justify-center p-4 border rounded-xl transition-all duration-300 ${
+                className={`relative overflow-hidden flex flex-col items-start justify-end p-5 border rounded-2xl transition-all duration-300 h-36 ${
                   formData.branch === branch.id
-                    ? "border-mbRed bg-mbRed/10 shadow-lg shadow-mbRed/20"
-                    : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"
+                    ? "border-mbRed shadow-lg shadow-mbRed/30"
+                    : "border-white/10 hover:border-white/40"
                 }`}
+                style={imgSrc ? { backgroundImage: `url(${imgSrc})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
               >
-                <MapPin className={`w-6 h-6 mb-2 ${formData.branch === branch.id ? "text-mbRed" : "text-gray-400"}`} />
-                <h3 className="text-[10px] md:text-sm font-bold font-['Oswald'] uppercase text-center">{branch.name}</h3>
+                {/* Overlay */}
+                <div className={`absolute inset-0 transition-all duration-300 ${
+                  formData.branch === branch.id 
+                    ? "bg-gradient-to-t from-black/90 via-black/50 to-transparent" 
+                    : "bg-gradient-to-t from-black/80 via-black/40 to-black/10"
+                }`} />
+                {/* Content */}
+                <div className="relative z-10 flex items-end justify-between w-full">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className={`w-4 h-4 ${formData.branch === branch.id ? "text-mbRed" : "text-white/70"}`} />
+                      <h3 className="text-base font-bold font-['Oswald'] uppercase text-white">{branch.name}</h3>
+                    </div>
+                  </div>
+                  {formData.branch === branch.id && (
+                    <div className="bg-mbRed rounded-full p-1">
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </div>
               </button>
-            ))}
+            );
+            })}
           </div>
 
           {formData.branch && (

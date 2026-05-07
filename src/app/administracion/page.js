@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X, ChevronLeft, ChevronRight as ChevronRightIcon, CheckCircle, Users, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, MapPin, Search, Trash2, Edit2, Coffee, Umbrella, PlusCircle, X, ChevronLeft, ChevronRight as ChevronRightIcon, CheckCircle, Users, AlertCircle, Eye, EyeOff, Camera } from "lucide-react";
 import { branches, stylists } from "@/lib/constants";
 
 export default function AdminDashboard() {
@@ -38,6 +38,10 @@ export default function AdminDashboard() {
   // Edit State
   const [editingApp, setEditingApp] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Stylist Profile State
+  const [showPasswords, setShowPasswords] = useState({});
+  const [savingProfile, setSavingProfile] = useState({});
 
   // Block State
   const [isBlocking, setIsBlocking] = useState(false);
@@ -410,54 +414,118 @@ export default function AdminDashboard() {
         </div>
       ) : activeTab === 'profiles' ? (
         <div className="space-y-8 animate-slide-up">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">Perfiles del Staff</h2>
+            <p className="text-xs text-gray-500">Foto, teléfono y contraseña de acceso por estilista</p>
+          </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stylists.filter(s => s.canTakeAppointments).map(stylist => (
-              <div key={stylist.id} className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4 hover:border-white/20 transition-all">
-                <div className="flex items-center gap-4">
-                  <img src={stylist.img} alt={stylist.name} className="w-16 h-16 rounded-full object-cover" />
-                  <div>
-                    <h3 className="text-xl font-['Oswald'] font-bold uppercase">{stylist.name}</h3>
-                    <p className="text-xs text-gray-500 uppercase tracking-widest">{stylist.branch}</p>
-                  </div>
-                </div>
+              <div key={stylist.id} className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-5 hover:border-white/20 transition-all">
                 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Número para SMS</label>
-                  <div className="flex gap-2">
+                {/* Photo section */}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="relative group">
+                    <img 
+                      src={stylistSettings[stylist.id]?.photo || stylist.img} 
+                      alt={stylist.name} 
+                      className="w-24 h-24 rounded-full object-cover border-2 border-white/10 group-hover:border-mbRed/50 transition-all"
+                    />
+                    <label 
+                      htmlFor={`photo-${stylist.id}`}
+                      className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-all"
+                    >
+                      <Camera className="w-6 h-6 text-white" />
+                    </label>
                     <input 
-                      type="tel"
-                      placeholder="+528112345678"
-                      className="flex-1 bg-black/50 border border-white/20 rounded-lg p-2 text-sm text-white outline-none focus:border-mbRed transition-colors"
-                      value={stylistSettings[stylist.id]?.phone || ""}
-                      onChange={(e) => {
-                        const newSettings = {
-                          ...stylistSettings,
-                          [stylist.id]: { ...stylistSettings[stylist.id], phone: e.target.value }
+                      id={`photo-${stylist.id}`}
+                      type="file" 
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setStylistSettings(prev => ({
+                            ...prev,
+                            [stylist.id]: { ...prev[stylist.id], photo: ev.target.result }
+                          }));
                         };
-                        setStylistSettings(newSettings);
+                        reader.readAsDataURL(file);
                       }}
                     />
-                    <button 
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/api/admin/stylists', {
-                            method: 'POST',
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(stylistSettings)
-                          });
-                          if (res.ok) alert("Perfil actualizado");
-                        } catch (err) {
-                          alert("Error al guardar");
-                        }
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xl font-['Oswald'] font-bold uppercase text-white">{stylist.name}</h3>
+                    <p className="text-xs text-gray-500 uppercase tracking-widest">
+                      {branches.find(b => b.id === stylist.branch)?.name || stylist.branch}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase">Teléfono SMS</label>
+                  <input 
+                    type="tel"
+                    placeholder="+528112345678"
+                    className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-sm text-white outline-none focus:border-mbRed transition-colors"
+                    value={stylistSettings[stylist.id]?.phone || ""}
+                    onChange={(e) => {
+                      setStylistSettings(prev => ({ ...prev, [stylist.id]: { ...prev[stylist.id], phone: e.target.value } }));
+                    }}
+                  />
+                </div>
+
+                {/* Password */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase">Contraseña de Acceso Staff</label>
+                  <div className="relative">
+                    <input 
+                      type={showPasswords[stylist.id] ? "text" : "password"}
+                      placeholder="myb2026$$"
+                      className="w-full bg-black/50 border border-white/20 rounded-lg p-2 pr-10 text-sm text-white outline-none focus:border-mbRed transition-colors font-mono"
+                      value={stylistSettings[stylist.id]?.password || ""}
+                      onChange={(e) => {
+                        setStylistSettings(prev => ({ ...prev, [stylist.id]: { ...prev[stylist.id], password: e.target.value } }));
                       }}
-                      className="bg-mbRed/20 text-mbRed hover:bg-mbRed hover:text-white p-2 rounded-lg transition-all"
-                      title="Guardar"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, [stylist.id]: !prev[stylist.id] }))}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                     >
-                      <CheckCircle className="w-5 h-5" />
+                      {showPasswords[stylist.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-600">Incluye código de país (ej. +52)</p>
+                  <p className="text-[10px] text-gray-600">Dejar en blanco para usar la contraseña actual (myb2026$$)</p>
                 </div>
+
+                {/* Save button */}
+                <button 
+                  disabled={savingProfile[stylist.id]}
+                  onClick={async () => {
+                    setSavingProfile(prev => ({ ...prev, [stylist.id]: true }));
+                    try {
+                      const res = await fetch('/api/admin/stylists', {
+                        method: 'POST',
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(stylistSettings)
+                      });
+                      if (res.ok) {
+                        setSavingProfile(prev => ({ ...prev, [stylist.id]: false }));
+                        alert(`¡Perfil de ${stylist.name} guardado!`);
+                      }
+                    } catch (err) {
+                      alert("Error al guardar");
+                      setSavingProfile(prev => ({ ...prev, [stylist.id]: false }));
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-mbRed/20 text-mbRed border border-mbRed/30 hover:bg-mbRed hover:text-white py-2.5 rounded-xl font-bold text-sm transition-all"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {savingProfile[stylist.id] ? "Guardando..." : "Guardar Perfil"}
+                </button>
               </div>
             ))}
           </div>
