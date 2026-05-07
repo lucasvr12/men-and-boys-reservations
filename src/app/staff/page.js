@@ -513,6 +513,28 @@ export default function StaffAgenda() {
         </div>
       </div>
 
+      {/* Floating Action Button for Quick Add */}
+      <button 
+        onClick={() => setIsQuickAdding(true)}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-mbRed text-white rounded-full shadow-2xl shadow-mbRed/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 md:hidden"
+        title="Registro Rápido"
+      >
+        <PlusCircle className="w-8 h-8" />
+      </button>
+
+      {/* Desktop Quick Add Button (Sticky) */}
+      <div className="hidden md:block fixed bottom-8 right-8 z-50">
+        <button 
+          onClick={() => setIsQuickAdding(true)}
+          className="flex items-center gap-3 bg-white text-black font-bold py-4 px-6 rounded-2xl shadow-2xl hover:bg-gray-100 transition-all group"
+        >
+          <div className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center group-hover:rotate-90 transition-transform">
+            <PlusCircle className="w-5 h-5" />
+          </div>
+          <span className="uppercase tracking-widest text-xs">Nueva Cita</span>
+        </button>
+      </div>
+
       {/* Quick Add Modal */}
       {isQuickAdding && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[150] flex items-center justify-center p-4">
