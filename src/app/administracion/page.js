@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   
-  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff", "profiles", "agenda"
+  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff", "profiles", "metrics", "clientes"
 
   // Personal Agenda State
   const [agendaMode, setAgendaMode] = useState("personal"); // "personal" | "branch"
@@ -25,9 +25,12 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Metrics State
-  const [metrics, setMetrics] = useState(null);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  
+  // Customers State
+  const [customers, setCustomers] = useState([]);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   // Calendar State
   const [viewDate, setViewDate] = useState(new Date());
@@ -99,12 +102,53 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
       fetchAppointments();
       fetchMonthlyAppointments();
       fetchMetrics();
+      fetchCustomers();
     }
   }, [filterDate, isAuthenticated]);
+
+  const fetchCustomers = async () => {
+    setIsLoadingCustomers(true);
+    try {
+      const res = await fetch('/api/admin/customers');
+      const data = await res.json();
+      if (res.ok) setCustomers(data.customers || []);
+    } catch (err) {
+      console.error("Error fetching customers:", err);
+    } finally {
+      setIsLoadingCustomers(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    if (customers.length === 0) return;
+    
+    const headers = ["Nombre", "Apellido", "Teléfono", "Sucursal Pref.", "Estilista Pref.", "Servicio Pref.", "Día Pref.", "Hora Pref."];
+    const rows = customers.map(c => [
+      c.name, 
+      c.surname, 
+      c.phone, 
+      c.branch, 
+      c.stylist, 
+      c.service, 
+      c.day, 
+      c.time
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n"
+      + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `clientes_men_and_boys_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleDelete = async (app, status = "Cancelada") => {
     const confirmMsg = status === "No asistió" ? "¿Marcar como 'No asistió'?" : "¿Estás seguro de que deseas eliminar esta cita?";
@@ -274,6 +318,12 @@ export default function AdminDashboard() {
               className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'metrics' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
             >
               MÉTRICAS
+            </button>
+            <button 
+              onClick={() => setActiveTab("clientes")}
+              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'clientes' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+            >
+              CLIENTES
             </button>
           </div>
         </div>
@@ -547,6 +597,87 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </>
+          )}
+        </div>
+          )}
+        </div>
+      ) : activeTab === 'clientes' ? (
+        <div className="space-y-8 animate-slide-up pb-20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">Directorio de Clientes</h2>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-2 w-full md:w-80">
+                <Search className="w-4 h-4 text-gray-500" />
+                <input 
+                  type="text" 
+                  placeholder="Buscar por nombre o teléfono..."
+                  className="bg-transparent border-none focus:ring-0 text-sm text-white w-full"
+                  value={customerSearch}
+                  onChange={e => setCustomerSearch(e.target.value)}
+                />
+              </div>
+              <button 
+                onClick={exportToCSV}
+                className="bg-white text-black font-bold py-3 px-6 rounded-xl text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all shadow-xl"
+              >
+                Descargar Excel (CSV)
+              </button>
+            </div>
+          </div>
+
+          {isLoadingCustomers ? (
+            <div className="text-center py-40">
+              <div className="w-12 h-12 border-4 border-mbRed border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+              <p className="text-gray-500 font-bold uppercase tracking-widest">Cargando base de datos de clientes...</p>
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-20 text-center text-gray-500 italic">
+              Aún no hay clientes registrados en el sistema.
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {customers
+                .filter(c => 
+                  (c.name || "").toLowerCase().includes(customerSearch.toLowerCase()) || 
+                  (c.phone || "").includes(customerSearch)
+                )
+                .map((customer, i) => (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-white/20 transition-all group">
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-mbRed/10 text-mbRed rounded-full flex items-center justify-center font-bold text-xl font-['Oswald'] border border-mbRed/20">
+                      {(customer.name || "?")[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-['Oswald'] font-bold uppercase text-white">
+                        {customer.name} {customer.surname}
+                      </h3>
+                      <p className="text-mbRed font-bold text-sm">{customer.phone}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 max-w-2xl">
+                    <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                      <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mb-1">Sucursal</p>
+                      <p className="text-xs font-bold text-gray-300">{customer.branch || "N/A"}</p>
+                    </div>
+                    <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                      <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mb-1">Estilista</p>
+                      <p className="text-xs font-bold text-gray-300">{customer.stylist || "N/A"}</p>
+                    </div>
+                    <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                      <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mb-1">Día Pref.</p>
+                      <p className="text-xs font-bold text-gray-300">
+                        {customer.day === "1" ? "Lun" : customer.day === "2" ? "Mar" : customer.day === "3" ? "Mié" : customer.day === "4" ? "Jue" : customer.day === "5" ? "Vie" : customer.day === "6" ? "Sáb" : "Dom"}
+                      </p>
+                    </div>
+                    <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                      <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mb-1">Últ. Hora</p>
+                      <p className="text-xs font-bold text-gray-300">{customer.time || "N/A"}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       ) : (
