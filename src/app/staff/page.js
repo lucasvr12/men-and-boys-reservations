@@ -84,7 +84,7 @@ export default function StaffAgenda() {
   // Logic
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === "Monterrey2026$$") {
+    if (password === "myb2026$$") {
       setIsAuthenticated(true);
       setLoginError("");
     } else {
