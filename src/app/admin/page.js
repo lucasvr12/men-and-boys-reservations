@@ -102,7 +102,6 @@ export default function AdminDashboard() {
     if (isAuthenticated) {
       fetchAppointments();
       fetchMonthlyAppointments();
-      fetchStylistSettings();
       fetchMetrics();
     }
   }, [filterDate, isAuthenticated]);
