@@ -369,27 +369,13 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 shrink-0">
                       <button 
-                        onClick={() => setEditingApp({ ...app, oldBranch: app.branch })}
-                        className="p-3 bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all"
-                        title="Editar / Mover"
+                        onClick={() => setEditingApp(app)}
+                        className="p-3 bg-white/5 text-gray-400 rounded-xl hover:bg-white/10 hover:text-white transition-all"
+                        title="Editar"
                       >
                         <Edit2 className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(app, "No asistió")}
-                        className="p-3 bg-yellow-500/10 text-yellow-500 rounded-xl hover:bg-yellow-500 hover:text-white transition-all"
-                        title="No asistió"
-                      >
-                        <AlertCircle className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(app, "Cancelada")}
-                        className="p-3 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                        title="Eliminar / Cancelar"
-                      >
-                        <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
@@ -670,8 +656,36 @@ export default function AdminDashboard() {
             <button onClick={() => setEditingApp(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
               <X className="w-6 h-6" />
             </button>
-            <h2 className="text-2xl font-['Oswald'] font-bold uppercase mb-6 text-white">Editar Cita</h2>
-            <form onSubmit={handleUpdate} className="space-y-4">
+            <h2 className="text-2xl font-['Oswald'] font-bold uppercase mb-6 text-white text-center">Editar Cita</h2>
+            
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <button 
+                onClick={() => { handleDelete(editingApp, "No asistió"); setEditingApp(null); }}
+                className="flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-yellow-500/10 hover:border-yellow-500/30 group transition-all"
+              >
+                <AlertCircle className="w-6 h-6 text-yellow-500 mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-yellow-500">No Asistió</span>
+              </button>
+              <button 
+                onClick={() => { handleDelete(editingApp, "Cancelada"); setEditingApp(null); }}
+                className="flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-red-500/10 hover:border-red-500/30 group transition-all"
+              >
+                <Trash2 className="w-6 h-6 text-red-500 mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-red-500">Cancelar Cita</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdate} className="space-y-4 pt-6 border-t border-white/10">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Nombre del Cliente</label>
+                <input 
+                  type="text" 
+                  className="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white outline-none focus:border-mbRed"
+                  value={editingApp.name}
+                  onChange={e => setEditingApp({...editingApp, name: e.target.value})}
+                  required
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Fecha</label>
