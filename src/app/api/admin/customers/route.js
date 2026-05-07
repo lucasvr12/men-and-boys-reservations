@@ -1,51 +1,26 @@
 import { NextResponse } from "next/server";
-import { google } from "googleapis";
-
-async function getSheetsClient() {
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-  });
-  return google.sheets({ version: "v4", auth });
-}
+import { getAllCustomers, initDB } from "@/lib/postgres";
 
 export async function GET() {
   try {
-    const sheets = await getSheetsClient();
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    await initDB(); // Ensure table exists
+    const customers = await getAllCustomers();
 
-    if (!spreadsheetId) {
-      return NextResponse.json({ error: "GOOGLE_SHEET_ID no configurada" }, { status: 500 });
-    }
-
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: "Clientes!A:H",
-    });
-
-    const rows = response.data.values;
-    if (!rows || rows.length <= 1) {
-      return NextResponse.json({ customers: [] });
-    }
-
-    // Skip header row
-    const customers = rows.slice(1).map(row => ({
-      phone: row[0],
-      name: row[1],
-      surname: row[2],
-      branch: row[3],
-      stylist: row[4],
-      service: row[5],
-      day: row[6],
-      time: row[7],
+    // Map DB fields to the format expected by the frontend
+    const formattedCustomers = customers.map(c => ({
+      phone: c.phone,
+      name: c.name,
+      surname: c.surname || "",
+      branch: c.branch || "N/A",
+      stylist: c.stylist || "N/A",
+      service: c.service || "N/A",
+      day: c.day || "0",
+      time: c.time || "N/A",
     }));
 
-    return NextResponse.json({ customers });
+    return NextResponse.json({ customers: formattedCustomers });
   } catch (error) {
     console.error("Error fetching customers for admin:", error);
-    return NextResponse.json({ error: "Error al obtener clientes" }, { status: 500 });
+    return NextResponse.json({ error: "Error al obtener clientes de la base de datos interna" }, { status: 500 });
   }
 }

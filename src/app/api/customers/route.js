@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCustomerByPhone, saveCustomer } from "@/lib/googleSheets";
+import { getCustomerByPhone, saveCustomer, initDB } from "@/lib/postgres";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -9,6 +9,7 @@ export async function GET(req) {
     return NextResponse.json({ error: "Teléfono requerido" }, { status: 400 });
   }
 
+  await initDB(); // Ensure table exists
   const customer = await getCustomerByPhone(phone);
   
   if (!customer) {

@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
-import { saveAppointment, saveCustomer } from "@/lib/googleSheets";
+import { saveAppointment } from "@/lib/googleSheets";
+import { saveCustomer } from "@/lib/postgres";
 
 // Define calendar IDs based on branch
 const CALENDAR_IDS = {
