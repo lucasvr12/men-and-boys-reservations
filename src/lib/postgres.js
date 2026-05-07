@@ -1,9 +1,10 @@
-import { sql } from "@vercel/postgres";
+import { createClient } from "@vercel/postgres";
 
 export async function initDB() {
+  const client = createClient();
   try {
-    // Create customers table if not exists
-    await sql`
+    await client.connect();
+    await client.query(`
       CREATE TABLE IF NOT EXISTS customers (
         id SERIAL PRIMARY KEY,
         phone TEXT UNIQUE NOT NULL,
@@ -17,27 +18,32 @@ export async function initDB() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
-    `;
+    `);
     console.log("Database initialized successfully");
   } catch (error) {
     console.error("Error initializing database:", error);
+  } finally {
+    await client.end();
   }
 }
 
 export async function getCustomerByPhone(phone) {
+  const client = createClient();
   try {
-    const { rows } = await sql`
-      SELECT * FROM customers WHERE phone = ${phone} LIMIT 1;
-    `;
-    return rows[0] || null;
+    await client.connect();
+    const res = await client.query('SELECT * FROM customers WHERE phone = $1 LIMIT 1;', [phone]);
+    return res.rows[0] || null;
   } catch (error) {
     console.error("Error fetching customer from Postgres:", error);
     return null;
+  } finally {
+    await client.end();
   }
 }
 
 export async function saveCustomer(customerData) {
   const { phone, name, surname, branch, stylist, service, day, time } = customerData;
+  const client = createClient();
   
   try {
     await initDB();
@@ -52,41 +58,50 @@ export async function saveCustomer(customerData) {
     const pDay = day || null;
     const pTime = time || null;
 
+    await client.connect();
+
     if (existing) {
-      await sql`
+      await client.query(`
         UPDATE customers 
         SET 
-          name = ${pName}, 
-          surname = ${pSurname}, 
-          branch = ${pBranch}, 
-          stylist = ${pStylist}, 
-          service = ${pService}, 
-          day = ${pDay}, 
-          time = ${pTime},
+          name = $2, 
+          surname = $3, 
+          branch = $4, 
+          stylist = $5, 
+          service = $6, 
+          day = $7, 
+          time = $8,
           updated_at = CURRENT_TIMESTAMP
-        WHERE phone = ${phone};
-      `;
+        WHERE phone = $1;
+      `, [phone, pName, pSurname, pBranch, pStylist, pService, pDay, pTime]);
     } else {
-      await sql`
+      await client.query(`
         INSERT INTO customers (phone, name, surname, branch, stylist, service, day, time)
-        VALUES (${phone}, ${pName}, ${pSurname}, ${pBranch}, ${pStylist}, ${pService}, ${pDay}, ${pTime});
-      `;
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+      `, [phone, pName, pSurname, pBranch, pStylist, pService, pDay, pTime]);
     }
     return true;
   } catch (error) {
     console.error("Error saving customer to Postgres:", error);
     return false;
+  } finally {
+    if (client.isOpen) { // Or try catch
+        try { await client.end(); } catch (e) {}
+    }
   }
 }
 
 export async function getAllCustomers() {
+  const client = createClient();
   try {
-    const { rows } = await sql`
-      SELECT * FROM customers ORDER BY name ASC;
-    `;
-    return rows;
+    await client.connect();
+    const res = await client.query('SELECT * FROM customers ORDER BY name ASC;');
+    return res.rows;
   } catch (error) {
     console.error("Error fetching all customers from Postgres:", error);
     return [];
+  } finally {
+    await client.end();
   }
 }
+
