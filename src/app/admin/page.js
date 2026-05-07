@@ -507,7 +507,7 @@ export default function AdminDashboard() {
             const getAgendaDayApps = (fullDate) => {
               let filtered = allMonthlyAppointments.filter(a => a.date === fullDate);
               if (agendaMode === "branch") {
-                filtered = filtered.filter(a => a.branch?.toLowerCase().includes(agendaSelectedBranch) || a.branch === branches.find(b => b.id === agendaSelectedBranch)?.name);
+                filtered = filtered.filter(a => (a.branch || "").toLowerCase().includes(agendaSelectedBranch) || a.branch === branches.find(b => b.id === agendaSelectedBranch)?.name);
               } else if (agendaSelectedStylist) {
                 const stylistName = stylists.find(s => s.id === agendaSelectedStylist)?.name;
                 filtered = filtered.filter(a => a.stylist === stylistName || a.stylist === "Sin preferencia");
@@ -627,12 +627,12 @@ export default function AdminDashboard() {
                 </div>
                 <div className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-lg">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">No Asistieron</p>
-                  <p className="text-4xl font-['Oswald'] font-bold text-yellow-500">{metrics.statusCounts["No asistió"] || 0}</p>
+                  <p className="text-4xl font-['Oswald'] font-bold text-yellow-500">{metrics.statusCounts?.["No asistió"] || 0}</p>
                   <p className="text-xs text-gray-500 mt-4">Requiere seguimiento</p>
                 </div>
                 <div className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-lg">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Canceladas</p>
-                  <p className="text-4xl font-['Oswald'] font-bold text-red-500">{metrics.statusCounts["Cancelada"] || 0}</p>
+                  <p className="text-4xl font-['Oswald'] font-bold text-red-500">{metrics.statusCounts?.["Cancelada"] || 0}</p>
                   <p className="text-xs text-gray-500 mt-4">Slots liberados</p>
                 </div>
               </div>
