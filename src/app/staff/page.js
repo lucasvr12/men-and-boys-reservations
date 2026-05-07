@@ -407,7 +407,7 @@ export default function StaffAgenda() {
         ) : (
           <div className="grid gap-3">
             {dayAppointments
-              .sort((a, b) => a.time.localeCompare(b.time))
+              .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
               .map((app, i) => (
                 <div 
                   key={i} 
@@ -415,12 +415,12 @@ export default function StaffAgenda() {
                   onClick={() => setEditingApp(app)}
                 >
                   <div className="w-16 h-16 bg-mbRed/20 text-mbRed rounded-2xl flex flex-col items-center justify-center font-bold font-['Oswald'] shrink-0 border border-mbRed/10">
-                    <span className="text-2xl leading-none">{app.time.split(":")[0]}</span>
-                    <span className="text-xs">:{app.time.split(":")[1]}</span>
+                    <span className="text-2xl leading-none">{(app.time || "00:00").split(":")[0]}</span>
+                    <span className="text-xs">:{((app.time || "00:00").split(":")[1])}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold font-['Oswald'] uppercase text-xl text-white truncate">
-                      {app.name}
+                      {app.name || "Sin nombre"}
                     </p>
                     <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-400">
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-mbRed/60" /> {app.time}</span>

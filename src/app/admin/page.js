@@ -204,10 +204,10 @@ export default function AdminDashboard() {
               <div 
                 key={i} 
                 className={`w-1.5 h-1.5 rounded-full ${
-                  app.name.includes("COMIDA") ? "bg-yellow-500" : 
-                  app.name.includes("VACACIONES") ? "bg-blue-500" : "bg-mbRed"
+                  (app.name || "").includes("COMIDA") ? "bg-yellow-500" : 
+                  (app.name || "").includes("VACACIONES") ? "bg-blue-500" : "bg-mbRed"
                 }`}
-                title={`${app.time} - ${app.name}`}
+                title={`${app.time || "00:00"} - ${app.name || ""}`}
               ></div>
             ))}
           </div>
@@ -343,14 +343,14 @@ export default function AdminDashboard() {
                   <div key={app.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/30 transition-all group shadow-lg hover:shadow-mbRed/5">
                     <div className="flex items-start gap-4 text-white">
                       <div className="w-14 h-14 bg-mbRed/20 text-mbRed rounded-xl flex items-center justify-center font-bold text-xl font-['Oswald']">
-                        {app.time.split(":")[0]}
-                        <span className="text-[10px] ml-0.5">:{app.time.split(":")[1]}</span>
+                        {(app.time || "00:00").split(":")[0]}
+                        <span className="text-[10px] ml-0.5">:{((app.time || "00:00").split(":")[1])}</span>
                       </div>
                       <div>
                         <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide flex items-center gap-2 text-white">
-                          {app.name}
-                          {app.name.includes("COMIDA") && <Coffee className="w-4 h-4 text-yellow-500" />}
-                          {app.name.includes("VACACIONES") && <Umbrella className="w-4 h-4 text-blue-500" />}
+                          {app.name || "Sin nombre"}
+                          {(app.name || "").includes("COMIDA") && <Coffee className="w-4 h-4 text-yellow-500" />}
+                          {(app.name || "").includes("VACACIONES") && <Umbrella className="w-4 h-4 text-blue-500" />}
                         </h3>
                         <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2 text-sm text-gray-400">
                           <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-mbRed/60" /> {app.time}</span>
@@ -577,14 +577,14 @@ export default function AdminDashboard() {
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center text-gray-500 italic">Sin citas para este día.</div>
                   ) : (
                     <div className="grid gap-3">
-                      {selectedDayApps.sort((a, b) => a.time.localeCompare(b.time)).map((app, i) => (
+                      {selectedDayApps.sort((a, b) => (a.time || "").localeCompare(b.time || "")).map((app, i) => (
                         <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5 flex items-center gap-4 hover:border-white/20 transition-all">
                           <div className="w-14 h-14 bg-mbRed/20 text-mbRed rounded-xl flex flex-col items-center justify-center font-bold font-['Oswald'] shrink-0">
-                            <span className="text-xl leading-none">{app.time.split(":")[0]}</span>
-                            <span className="text-[10px]">:{app.time.split(":")[1]}</span>
+                            <span className="text-xl leading-none">{(app.time || "00:00").split(":")[0]}</span>
+                            <span className="text-[10px]">:{((app.time || "00:00").split(":")[1])}</span>
                           </div>
                           <div>
-                            <p className="font-bold font-['Oswald'] uppercase text-lg leading-tight text-white">{app.name}</p>
+                            <p className="font-bold font-['Oswald'] uppercase text-lg leading-tight text-white">{app.name || "Sin nombre"}</p>
                             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-400">
                               <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-mbRed/60" /> {app.time}</span>
                               <span className="flex items-center gap-1"><User className="w-3 h-3 text-mbRed/60" /> {app.stylist}</span>
