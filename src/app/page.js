@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MapPin, Clock, User, Calendar as CalendarIcon, CheckCircle, ChevronRight, ArrowLeft, Phone, Search } from "lucide-react";
-import { branches, stylists } from "@/lib/constants";
-
-const services = [
-  { id: "15min", name: "Corte Rápido", duration: "15 min", price: "$150" },
-  { id: "30min", name: "Corte Estándar", duration: "30 min", price: "$250" },
-  { id: "60min", name: "Servicio Completo", duration: "1 hora", price: "$400" },
-];
+import { branches, stylists, servicesCatalog } from "@/lib/constants";
 
 export default function Home() {
   const [step, setStep] = useState(0); // 0: Welcome, 0.1: Identify, 1-4: Regular flow
@@ -16,6 +10,7 @@ export default function Home() {
   const [lookupPhone, setLookupPhone] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [expandedCategory, setExpandedCategory] = useState("HAIRSTUDIO");
   
   const [formData, setFormData] = useState({
     branch: "",
@@ -138,7 +133,7 @@ export default function Home() {
         body: JSON.stringify({
           ...formData,
           branchName: branches.find(b => b.id === formData.branch)?.name,
-          serviceName: services.find(s => s.id === formData.service)?.name,
+          serviceName: servicesCatalog.find(s => s.id === formData.service)?.name,
           stylistName: stylists.find(s => s.id === formData.stylist)?.name,
         }),
       });
@@ -327,27 +322,53 @@ export default function Home() {
           </button>
           <div className="text-center mb-10">
             <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">¿Qué servicio buscas?</h2>
-            <p className="text-gray-400">Elige la duración de tu cita.</p>
+            <p className="text-gray-400">Despliega la categoría para ver las opciones disponibles.</p>
           </div>
-          <div className="grid grid-cols-1 gap-4">
-            {services.map((service) => (
-              <button
-                key={service.id}
-                onClick={() => handleServiceSelect(service.id)}
-                className={`flex flex-col text-left p-6 border rounded-xl transition-all duration-300 hover:-translate-y-1 ${
-                  formData.service === service.id
-                    ? "border-mbRed bg-mbRed/10"
-                    : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"
-                }`}
-              >
-                <div className="flex justify-between items-start w-full mb-4">
-                  <Clock className={`w-8 h-8 ${formData.service === service.id ? "text-mbRed" : "text-gray-400"}`} />
-                  <span className="font-bold text-lg">{service.price}</span>
+          
+          <div className="space-y-4">
+            {Array.from(new Set(servicesCatalog.filter(s => s.branches.includes(formData.branch)).map(s => s.category))).map(category => {
+              const catServices = servicesCatalog.filter(s => s.branches.includes(formData.branch) && s.category === category);
+              const isExpanded = expandedCategory === category;
+              
+              return (
+                <div key={category} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-300">
+                  <button
+                    onClick={() => setExpandedCategory(isExpanded ? null : category)}
+                    className={`w-full p-6 flex justify-between items-center transition-colors ${isExpanded ? "bg-mbRed/10 border-b border-mbRed/20" : "hover:bg-white/10"}`}
+                  >
+                    <h3 className={`text-2xl font-['Oswald'] font-bold uppercase tracking-wide ${isExpanded ? "text-mbRed" : "text-white"}`}>{category}</h3>
+                    <ChevronRight className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${isExpanded ? "rotate-90 text-mbRed" : ""}`} />
+                  </button>
+                  
+                  <div 
+                    className="transition-all duration-500 ease-in-out overflow-hidden"
+                    style={{ maxHeight: isExpanded ? `${catServices.length * 150}px` : "0px", opacity: isExpanded ? 1 : 0 }}
+                  >
+                    <div className="p-4 grid gap-3">
+                      {catServices.map((service) => (
+                        <button
+                          key={service.id}
+                          onClick={() => handleServiceSelect(service.id)}
+                          className={`flex flex-col text-left p-5 border rounded-xl transition-all duration-300 hover:-translate-y-1 ${
+                            formData.service === service.id
+                              ? "border-mbRed bg-mbRed/10 shadow-lg shadow-mbRed/20"
+                              : "border-white/10 bg-black/40 hover:border-white/30 hover:bg-white/10"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start w-full mb-2">
+                            <h4 className="text-lg font-bold font-['Oswald'] uppercase text-white pr-4 leading-tight">{service.name}</h4>
+                            <span className="font-bold text-mbRed whitespace-nowrap bg-mbRed/10 px-3 py-1 rounded-full text-sm">{service.price}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-400">
+                            <Clock className="w-4 h-4 text-gray-500" /> {service.durationStr}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold font-['Oswald'] uppercase">{service.name}</h3>
-                <p className="text-sm text-gray-400 mt-1">{service.duration}</p>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
