@@ -600,8 +600,6 @@ export default function AdminDashboard() {
             </>
           )}
         </div>
-          )}
-        </div>
       ) : activeTab === 'clientes' ? (
         <div className="space-y-8 animate-slide-up pb-20">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
