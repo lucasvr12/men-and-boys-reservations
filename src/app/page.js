@@ -157,11 +157,11 @@ export default function Home() {
       {/* Progress Bar (Only for registration or booking flow) */}
       {step >= 1 && step < 5 && (
         <div className="mb-8">
-          <div className="flex justify-between text-xs font-semibold text-gray-400 mb-2 font-['Oswald'] tracking-wider">
-            <span className={step >= 1 ? "text-mbRed" : ""}>SUCURSAL</span>
-            <span className={step >= 2 ? "text-mbRed" : ""}>SERVICIO</span>
-            <span className={step >= 3 ? "text-mbRed" : ""}>ESTILISTA</span>
-            <span className={step >= 4 ? "text-mbRed" : ""}>DATOS</span>
+          <div className="text-center text-sm font-bold text-mbRed mb-2 font-['Oswald'] tracking-widest uppercase">
+            {step === 1 && "SUCURSAL"}
+            {step === 2 && "SERVICIO"}
+            {step === 3 && "ESTILISTA"}
+            {step === 4 && "DATOS"}
           </div>
           <div className="h-1 bg-white/10 rounded-full overflow-hidden">
             <div
