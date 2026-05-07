@@ -160,6 +160,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`/api/admin/appointments/${app.id}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           branch: app.branch,
           phone: app.phone,
@@ -183,6 +184,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`/api/admin/appointments/${editingApp.id}`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingApp),
       });
       if (!res.ok) throw new Error("Error al actualizar");
@@ -202,6 +204,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch("/api/admin/staff/block", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(blockData),
       });
       if (!res.ok) throw new Error("Error al crear bloqueo");
@@ -469,6 +472,7 @@ export default function AdminDashboard() {
                         try {
                           const res = await fetch('/api/admin/stylists', {
                             method: 'POST',
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(stylistSettings)
                           });
                           if (res.ok) alert("Perfil actualizado");
