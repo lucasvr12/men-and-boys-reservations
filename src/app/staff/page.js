@@ -17,7 +17,8 @@ import {
   AlertCircle,
   LogOut,
   Phone,
-  Umbrella
+  Umbrella,
+  Coffee
 } from "lucide-react";
 import { branches, stylists } from "@/lib/constants";
 
@@ -59,6 +60,14 @@ export default function StaffAgenda() {
     startDate: new Date().toISOString().split("T")[0],
     endDate: new Date().toISOString().split("T")[0],
     reason: "Vacaciones",
+  });
+
+  // Lunch State
+  const [isManagingLunch, setIsManagingLunch] = useState(false);
+  const [lunchData, setLunchData] = useState({
+    date: new Date().toISOString().split("T")[0],
+    startTime: "14:00",
+    endTime: "15:00",
   });
 
   // Effects
@@ -178,6 +187,49 @@ export default function StaffAgenda() {
         alert(err.error || "Error al crear cita");
       }
     } catch (e) {
+      alert("Error de conexión");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLunchSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const stylistName = stylists.find(s => s.id === selectedStylist)?.name;
+    const branchName = branches.find(b => b.id === selectedBranch)?.name;
+    try {
+      // Calculate duration in minutes between startTime and endTime
+      const [sh, sm] = lunchData.startTime.split(":").map(Number);
+      const [eh, em] = lunchData.endTime.split(":").map(Number);
+      const duration = (eh * 60 + em) - (sh * 60 + sm);
+      if (duration <= 0) {
+        alert("La hora de regreso debe ser después de la hora de salida.");
+        setIsSubmitting(false);
+        return;
+      }
+      const res = await fetch("/api/admin/staff/block", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stylistName,
+          branchName,
+          type: "comida",
+          date: lunchData.date,
+          time: lunchData.startTime,
+          duration,
+          branch: selectedBranch,
+        }),
+      });
+      if (res.ok) {
+        setIsManagingLunch(false);
+        alert(`✅ Hora de comida bloqueada: ${lunchData.startTime} – ${lunchData.endTime}`);
+        fetchAppointments();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Error al bloquear");
+      }
+    } catch (err) {
       alert("Error de conexión");
     } finally {
       setIsSubmitting(false);
@@ -422,6 +474,12 @@ export default function StaffAgenda() {
               <Umbrella className="w-4 h-4" /> Vacaciones / Descanso
             </button>
             <button 
+              onClick={() => setIsManagingLunch(true)}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-yellow-500/80 font-bold py-2 px-4 rounded-lg text-[10px] uppercase tracking-widest hover:text-yellow-400 hover:bg-yellow-500/10 hover:border-yellow-500/30 transition-all"
+            >
+              <Coffee className="w-4 h-4" /> Hora de Comida
+            </button>
+            <button 
               onClick={() => setIsQuickAdding(true)}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white text-black font-bold py-2 px-4 rounded-lg text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all"
             >
@@ -642,6 +700,71 @@ export default function StaffAgenda() {
                 className="w-full bg-white text-black font-bold py-5 rounded-2xl hover:bg-gray-200 transition-all uppercase tracking-[0.2em] font-['Oswald'] shadow-xl disabled:opacity-50"
               >
                 {isSubmitting ? "Registrando..." : "Guardar Vacaciones"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Lunch Break Modal */}
+      {isManagingLunch && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[150] flex items-center justify-center p-4">
+          <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-md rounded-3xl p-8 relative animate-scale-in">
+            <button onClick={() => setIsManagingLunch(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+            <div className="mb-8 text-center">
+              <div className="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Coffee className="w-8 h-8 text-yellow-500" />
+              </div>
+              <h2 className="text-3xl font-['Oswald'] font-bold uppercase text-white">Hora de Comida</h2>
+              <p className="text-gray-400 text-sm mt-1">Bloquea tu horario de descanso para comer.</p>
+            </div>
+
+            <form onSubmit={handleLunchSubmit} className="space-y-5">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Fecha</label>
+                <input 
+                  type="date" required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-yellow-500 transition-all [color-scheme:dark]"
+                  value={lunchData.date}
+                  onChange={e => setLunchData({...lunchData, date: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Sale a comer</label>
+                  <input 
+                    type="time" required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-yellow-500 transition-all [color-scheme:dark]"
+                    value={lunchData.startTime}
+                    onChange={e => setLunchData({...lunchData, startTime: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Regresa de comer</label>
+                  <input 
+                    type="time" required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-yellow-500 transition-all [color-scheme:dark]"
+                    value={lunchData.endTime}
+                    onChange={e => setLunchData({...lunchData, endTime: e.target.value})}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 text-center">
+                Duración: {(() => {
+                  const [sh, sm] = lunchData.startTime.split(":").map(Number);
+                  const [eh, em] = lunchData.endTime.split(":").map(Number);
+                  const mins = (eh * 60 + em) - (sh * 60 + sm);
+                  return mins > 0 ? `${mins} minutos` : "— Verifica las horas";
+                })()}
+              </p>
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full bg-yellow-500 text-black font-bold py-5 rounded-2xl hover:bg-yellow-400 transition-all uppercase tracking-[0.2em] font-['Oswald'] shadow-xl disabled:opacity-50"
+              >
+                {isSubmitting ? "Bloqueando..." : "Bloquear Comida"}
               </button>
             </form>
           </div>
