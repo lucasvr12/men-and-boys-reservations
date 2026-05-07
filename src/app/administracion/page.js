@@ -80,7 +80,7 @@ export default function AdminDashboard() {
 
   const fetchMonthlyAppointments = async () => {
     try {
-      const res = await fetch('/api/admin/appointments'); 
+      const res = await fetch(`/api/admin/appointments?t=${Date.now()}`); 
       const data = await res.json();
       if (res.ok) setAllMonthlyAppointments(data.appointments || []);
     } catch (err) {
@@ -101,7 +101,7 @@ export default function AdminDashboard() {
   const fetchCustomers = async () => {
     setIsLoadingCustomers(true);
     try {
-      const res = await fetch('/api/admin/customers');
+      const res = await fetch(`/api/admin/customers?t=${Date.now()}`);
       const data = await res.json();
       if (res.ok) setCustomers(data.customers || []);
     } catch (err) {
@@ -149,7 +149,8 @@ export default function AdminDashboard() {
         phone: app.phone || "",
         date: app.date || "",
         time: app.time || "",
-        status: status
+        status: status,
+        t: Date.now()
       }).toString();
 
       const res = await fetch(`/api/admin/appointments/${app.id}?${queryParams}`, {

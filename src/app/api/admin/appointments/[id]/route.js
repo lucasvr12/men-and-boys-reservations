@@ -57,7 +57,22 @@ export async function PATCH(req, { params }) {
   try {
     const { id } = params;
     const body = await req.json();
-    const { branch, oldBranch, date, time, stylistName, serviceName, name, phone } = body;
+    const name = body.name;
+    const phone = body.phone;
+    const date = body.date;
+    const time = body.time;
+    const branch = body.branchName || body.branch || "";
+    const serviceName = body.serviceName || body.service || "";
+    const stylistName = body.stylistName || body.stylist || "";
+    const oldBranch = body.oldBranch;
+
+    let branchId = branch.toLowerCase();
+    if (branch === "Misión del Valle") branchId = "mision";
+    if (branch === "Carretera Nacional") branchId = "nacional";
+    if (branch === "Carrizalejo") branchId = "carrizalejo";
+
+    const calendarId = CALENDAR_IDS[branchId];
+    if (!calendarId) return NextResponse.json({ error: "Branch invalid" }, { status: 400 });
 
     const auth = await getAuth();
     const calendar = google.calendar({ version: "v3", auth });
