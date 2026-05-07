@@ -158,7 +158,7 @@ export default function Home() {
   };
 
   return (
-    <div className="animate-fade-in relative">
+    <div className="max-w-md mx-auto px-4 py-8 md:py-12 animate-fade-in relative">
       {/* Progress Bar (Only for registration or booking flow) */}
       {step >= 1 && step < 5 && (
         <div className="mb-8">

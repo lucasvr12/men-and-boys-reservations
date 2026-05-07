@@ -315,7 +315,7 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">
-                Citas del {new Date(filterDate + 'T00:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+                Citas del {filterDate ? new Date(filterDate + 'T00:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) : "Día no seleccionado"}
               </h2>
               <div className="hidden md:flex items-center gap-2 bg-black/50 border border-white/20 rounded-lg px-3 py-2">
                 <Search className="w-4 h-4 text-gray-500" />
@@ -571,7 +571,7 @@ export default function AdminDashboard() {
 
                 <div className="space-y-4">
                   <h3 className="text-xl font-['Oswald'] font-bold uppercase text-white">
-                    {new Date(agendaSelectedDate + "T00:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                    {agendaSelectedDate ? new Date(agendaSelectedDate + "T00:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }) : "Día no seleccionado"}
                   </h3>
                   {selectedDayApps.length === 0 ? (
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center text-gray-500 italic">Sin citas para este día.</div>
