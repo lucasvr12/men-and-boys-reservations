@@ -138,3 +138,6 @@ export async function GET(request) {
     return NextResponse.json({ error: "Error al consultar disponibilidad." }, { status: 500 });
   }
 }
+
+export const dynamic = 'force-dynamic';
+

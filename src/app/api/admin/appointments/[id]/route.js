@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { CALENDAR_IDS } from "@/lib/constants";
 import { updateAppointmentStatus } from "@/lib/googleSheets";
 
+export const dynamic = 'force-dynamic';
+
 async function getAuth() {
   return new google.auth.GoogleAuth({
     credentials: {

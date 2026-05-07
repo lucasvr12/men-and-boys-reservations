@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCustomerByPhone, saveCustomer, initDB } from "@/lib/postgres";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const phone = searchParams.get("phone");

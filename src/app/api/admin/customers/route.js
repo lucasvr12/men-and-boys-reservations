@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAllCustomers, initDB } from "@/lib/postgres";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     await initDB(); // Ensure table exists

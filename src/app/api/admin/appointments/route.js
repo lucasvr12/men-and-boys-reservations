@@ -1,6 +1,8 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 const CALENDAR_IDS = {
   Carrizalejo: process.env.CALENDAR_ID_CARRIZALEJO,
   "Misión del Valle": process.env.CALENDAR_ID_MISION,

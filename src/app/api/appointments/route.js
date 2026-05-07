@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { saveAppointment } from "@/lib/googleSheets";
 import { saveCustomer } from "@/lib/postgres";
 
+export const dynamic = 'force-dynamic';
+
 // Define calendar IDs based on branch
 const CALENDAR_IDS = {
   carrizalejo: process.env.CALENDAR_ID_CARRIZALEJO,
