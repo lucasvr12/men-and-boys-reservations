@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { CALENDAR_IDS, SERVICE_DURATIONS, stylists } from "@/lib/constants";
+import { getVacations } from "@/lib/googleSheets";
 
 export async function GET(request) {
   try {
@@ -9,6 +10,7 @@ export async function GET(request) {
     const branch = searchParams.get("branch");
     const serviceDuration = searchParams.get("duration") || "30min";
     const selectedStylistId = searchParams.get("stylist") || "any";
+    const step = parseInt(searchParams.get("step") || "30"); // 15 for staff, 30 for clients
 
     if (!date || !branch) {
       return NextResponse.json({ error: "Faltan parámetros." }, { status: 400 });
@@ -32,7 +34,7 @@ export async function GET(request) {
     const lastPossibleStartMin = (closingHour * 60) - durationMins;
 
     for (let h = openingHour; h < closingHour; h++) {
-      for (let m = 0; m < 60; m += 30) {
+      for (let m = 0; m < 60; m += step) {
         const slotStartMin = h * 60 + m;
         if (slotStartMin <= lastPossibleStartMin) {
           const timeString = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
@@ -68,13 +70,29 @@ export async function GET(request) {
     const branchStylists = stylists.filter(s => s.branch === branch && s.canTakeAppointments);
     const totalStylistsCount = branchStylists.length;
 
-    const availableSlots = slots.filter((slotTime) => {
+    // Check for Vacations
+    const vacations = await getVacations();
+    const stylistOnVacation = vacations.find(v => 
+      v.stylistId === selectedStylistId && 
+      date >= v.startDate && 
+      date <= v.endDate
+    );
+
+    if (stylistOnVacation) {
+      return NextResponse.json({ 
+        availableSlots: [], 
+        status: "vacation",
+        message: `Estilista en vacaciones (del ${stylistOnVacation.startDate} al ${stylistOnVacation.endDate})`
+      });
+    }
+
+    const resultSlots = slots.map((slotTime) => {
       const slotStart = new Date(`${date}T${slotTime}:00-06:00`);
       const slotEnd = new Date(slotStart.getTime() + durationMins * 60000);
 
       // Past check
       const now = new Date();
-      if (slotStart < now) return false;
+      if (slotStart < now) return { time: slotTime, available: false, past: true };
 
       // Find which stylists are busy at this time
       const busyStylistsNames = new Set();
@@ -88,39 +106,33 @@ export async function GET(request) {
           const description = event.description || "";
           const summary = event.summary || "";
           
-          // Try to find stylist name in description or summary (for blockings)
           let stylistName = null;
           const stylistMatch = description.match(/(?:Estilista|Barbero):\s*(.*)/);
           if (stylistMatch) {
             stylistName = stylistMatch[1].trim();
           } else {
-            // Check for blocking events like "COMIDA: Laura" or "VACACIONES: Laura"
             const blockingMatch = summary.match(/(?:COMIDA|VACACIONES|BLOQUEO):\s*(.*)/i);
             if (blockingMatch) {
               stylistName = blockingMatch[1].trim();
             }
           }
 
-          if (stylistName) {
-            busyStylistsNames.add(stylistName);
-          } else {
-            // If it's a general block or unknown, we could count it as one busy person
-            // For now, let's assume all relevant events have a stylist name
-          }
+          if (stylistName) busyStylistsNames.add(stylistName);
         }
       });
 
+      let isAvailable = false;
       if (selectedStylistId === "any") {
-        // "Sin preferencia": available if at least one stylist is free
-        return busyStylistsNames.size < totalStylistsCount;
+        isAvailable = busyStylistsNames.size < totalStylistsCount;
       } else {
-        // Specific stylist: available if THEY are not busy
         const selectedStylist = stylists.find(s => s.id === selectedStylistId);
-        return !busyStylistsNames.has(selectedStylist?.name);
+        isAvailable = !busyStylistsNames.has(selectedStylist?.name);
       }
+
+      return { time: slotTime, available: isAvailable };
     });
 
-    return NextResponse.json({ availableSlots });
+    return NextResponse.json({ availableSlots: resultSlots });
   } catch (error) {
     console.error("Error fetching availability:", error);
     return NextResponse.json({ error: "Error al consultar disponibilidad." }, { status: 500 });

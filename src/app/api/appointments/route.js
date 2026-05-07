@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
+import { saveAppointment, saveCustomer } from "@/lib/googleSheets";
 
 // Define calendar IDs based on branch
 const CALENDAR_IDS = {
@@ -90,6 +91,33 @@ export async function POST(req) {
     } catch (smsErr) {
       console.error("Error sending immediate SMS:", smsErr);
       // We don't fail the request if SMS fails
+    }
+
+    // Save to Google Sheets
+    try {
+      await saveAppointment({
+        date,
+        time,
+        phone,
+        name: `${name} ${body.surname || ""}`.trim(),
+        branchName,
+        stylistName,
+        serviceName
+      });
+
+      // Also update/save customer preferences
+      await saveCustomer({
+        phone,
+        name,
+        surname: body.surname || "",
+        branch,
+        stylist,
+        service,
+        day: new Date(date).getDay().toString(), // Store preferred day of week
+        time
+      });
+    } catch (sheetErr) {
+      console.error("Error saving to Google Sheets:", sheetErr);
     }
 
     return NextResponse.json({ success: true, eventLink: response.data.htmlLink });

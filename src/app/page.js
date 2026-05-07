@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { MapPin, Clock, User, Calendar as CalendarIcon, CheckCircle, ChevronRight, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MapPin, Clock, User, Calendar as CalendarIcon, CheckCircle, ChevronRight, ArrowLeft, Phone, Search } from "lucide-react";
 import { branches, stylists } from "@/lib/constants";
 
 const services = [
@@ -11,39 +11,60 @@ const services = [
 ];
 
 export default function Home() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // 0: Welcome, 0.1: Identify, 1-4: Regular flow
+  const [isRegisteredFlow, setIsRegisteredFlow] = useState(false);
+  const [lookupPhone, setLookupPhone] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  
   const [formData, setFormData] = useState({
     branch: "",
     service: "",
     stylist: "",
     name: "",
+    surname: "",
     phone: "",
     date: "",
     time: "",
+    sendReminders: true,
   });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [isLoadingTimes, setIsLoadingTimes] = useState(false);
   const [closedMessage, setClosedMessage] = useState("");
 
-  const nextStep = () => setStep((s) => s + 1);
-  const prevStep = () => setStep((s) => s - 1);
+  const nextStep = () => setStep((s) => (s < 1 ? 1 : s + 1));
+  const prevStep = () => {
+    if (step === 0.1) setStep(0);
+    else if (step === 1 && isRegisteredFlow) setStep(0);
+    else if (step === 1) setStep(0);
+    else if (step === 4 && isRegisteredFlow) setStep(0.1);
+    else setStep((s) => s - 1);
+  };
 
   const updateData = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (field === "date") {
-      fetchAvailability(value);
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    if (field === "date" || field === "branch" || field === "service" || field === "stylist") {
+      fetchAvailability(newFormData.date, newFormData.branch, newFormData.service, newFormData.stylist);
     }
   };
 
-  const fetchAvailability = async (selectedDate) => {
+  const fetchAvailability = async (selectedDate, branch, service, stylist) => {
+    if (!selectedDate || !branch || !service || !stylist) return;
+    
     setFormData((prev) => ({ ...prev, time: "" })); // Reset time
     setIsLoadingTimes(true);
     setClosedMessage("");
     try {
-      const res = await fetch(`/api/availability?date=${selectedDate}&branch=${formData.branch}&duration=${formData.service}&stylist=${formData.stylist}`);
+      const res = await fetch(`/api/availability?date=${selectedDate}&branch=${branch}&duration=${service}&stylist=${stylist}`);
       const data = await res.json();
-      if (data.message) {
+      
+      if (data.status === "vacation") {
+        setClosedMessage(data.message);
+        setAvailableTimes([]);
+      } else if (data.message) {
         setClosedMessage(data.message);
         setAvailableTimes([]);
       } else {
@@ -53,6 +74,42 @@ export default function Home() {
       console.error(error);
     } finally {
       setIsLoadingTimes(false);
+    }
+  };
+
+  const handleIdentify = async (e) => {
+    e.preventDefault();
+    setIsSearching(true);
+    setSearchError("");
+    
+    try {
+      const res = await fetch(`/api/customers?phone=${lookupPhone}`);
+      const data = await res.json();
+      
+      if (data.found) {
+        const customer = data.customer;
+        setFormData({
+          ...formData,
+          phone: customer.phone,
+          name: customer.name,
+          surname: customer.surname,
+          branch: customer.branch || "",
+          service: customer.service || "",
+          stylist: customer.stylist || "",
+        });
+        setIsRegisteredFlow(true);
+        setStep(4); // Jump to data/date selection
+      } else {
+        setSearchError("No encontramos un cliente con ese número. Por favor regístrate.");
+        setTimeout(() => {
+          setStep(1);
+          setIsRegisteredFlow(false);
+        }, 2000);
+      }
+    } catch (error) {
+      setSearchError("Error al buscar cliente. Intenta de nuevo.");
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -91,7 +148,7 @@ export default function Home() {
         throw new Error(errorData.error || "Error al crear la cita");
       }
       
-      nextStep();
+      setStep(5);
     } catch (error) {
       console.error(error);
       alert("Hubo un problema al registrar la cita: " + error.message);
@@ -102,8 +159,8 @@ export default function Home() {
 
   return (
     <div className="animate-fade-in relative">
-      {/* Progress Bar */}
-      {step < 5 && (
+      {/* Progress Bar (Only for registration or booking flow) */}
+      {step >= 1 && step < 5 && (
         <div className="mb-8">
           <div className="flex justify-between text-xs font-semibold text-gray-400 mb-2 font-['Oswald'] tracking-wider">
             <span className={step >= 1 ? "text-mbRed" : ""}>SUCURSAL</span>
@@ -120,60 +177,143 @@ export default function Home() {
         </div>
       )}
 
+      {/* STEP 0: WELCOME */}
+      {step === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 space-y-12 animate-step-in">
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-mbRed to-red-900 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            <img 
+              src="/logo.jpg" 
+              alt="Men & Boys Logo" 
+              className="relative w-64 md:w-80 h-auto object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+          
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl md:text-5xl font-['Oswald'] font-bold uppercase tracking-tighter">Bienvenido a Men & Boys</h1>
+            <p className="text-gray-400 text-lg max-w-md mx-auto">Reserva tu espacio con los expertos en estilo masculino.</p>
+          </div>
+
+          <div className="flex flex-col w-full max-w-sm gap-4">
+            <button
+              onClick={() => setStep(0.1)}
+              className="group relative flex items-center justify-center gap-3 bg-white text-black font-bold py-5 rounded-xl hover:bg-gray-100 transition-all uppercase tracking-widest font-['Oswald'] shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <User className="w-5 h-5" />
+              Soy cliente registrado
+            </button>
+            <button
+              onClick={() => {
+                setIsRegisteredFlow(false);
+                setFormData({ ...formData, name: "", surname: "", phone: "", branch: "", service: "", stylist: "" });
+                setStep(1);
+              }}
+              className="group relative flex items-center justify-center gap-3 bg-mbRed text-white font-bold py-5 rounded-xl hover:bg-red-700 transition-all uppercase tracking-widest font-['Oswald'] shadow-xl hover:scale-[1.02] active:scale-[0.98] shadow-mbRed/20"
+            >
+              <ChevronRight className="w-5 h-5" />
+              No estoy registrado
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 0.1: IDENTIFY */}
+      {step === 0.1 && (
+        <div className="max-w-md mx-auto space-y-8 animate-step-in py-10">
+          <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Volver
+          </button>
+          <div className="text-center">
+            <h2 className="text-4xl font-['Oswald'] font-bold mb-4 uppercase">Identifícate</h2>
+            <p className="text-gray-400">Ingresa tu número de teléfono para cargar tus preferencias.</p>
+          </div>
+
+          <form onSubmit={handleIdentify} className="space-y-6">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Phone className="h-5 w-5 text-gray-500" />
+              </div>
+              <input
+                type="tel"
+                required
+                className="w-full bg-white/5 border border-white/20 rounded-xl pl-12 pr-4 py-4 text-xl focus:outline-none focus:border-mbRed transition-all"
+                placeholder="81 1234 5678"
+                value={lookupPhone}
+                onChange={(e) => setLookupPhone(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            {searchError && (
+              <div className="bg-red-500/10 text-mbRed p-4 rounded-lg text-center font-semibold text-sm animate-shake">
+                {searchError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSearching || lookupPhone.length < 8}
+              className="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition-all uppercase tracking-widest font-['Oswald'] flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSearching ? <span className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent"></span> : <Search className="w-5 h-5" />}
+              {isSearching ? "Buscando..." : "Buscar mi cuenta"}
+            </button>
+          </form>
+        </div>
+      )}
+
       {/* STEP 1: SUCURSAL */}
       {step === 1 && (
         <div key="step1" className="space-y-6 animate-step-in">
+          <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Volver
+          </button>
           <div className="text-center mb-10">
             <h1 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu sucursal</h1>
             <p className="text-gray-400">Selecciona la ubicación más cercana a ti en Nuevo León.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             {branches.map((branch) => (
               <button
                 key={branch.id}
                 onClick={() => handleBranchSelect(branch.id)}
-                className={`flex flex-col items-center p-8 border rounded-xl transition-all duration-300 hover:-translate-y-1 ${
+                className={`flex flex-col items-center justify-center p-4 border rounded-xl transition-all duration-300 ${
                   formData.branch === branch.id
                     ? "border-mbRed bg-mbRed/10 shadow-lg shadow-mbRed/20"
                     : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"
                 }`}
               >
-                <MapPin className={`w-10 h-10 mb-4 ${formData.branch === branch.id ? "text-mbRed" : "text-gray-400"}`} />
-                <h3 className="text-xl font-bold font-['Oswald'] uppercase">{branch.name}</h3>
-                <p className="text-xs text-gray-500 mt-2 text-center leading-relaxed">{branch.address}</p>
+                <MapPin className={`w-6 h-6 mb-2 ${formData.branch === branch.id ? "text-mbRed" : "text-gray-400"}`} />
+                <h3 className="text-[10px] md:text-sm font-bold font-['Oswald'] uppercase text-center">{branch.name}</h3>
               </button>
             ))}
           </div>
 
-          {/* Map Display Section */}
           {formData.branch && (
             <div className="mt-8 animate-fade-in space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-mbRed uppercase tracking-widest flex items-center gap-2">
-                  <MapPin className="w-4 h-4" /> Ubicación en Mapa
-                </h4>
-                <span className="text-[10px] text-gray-500 uppercase">Cerca de ti</span>
-              </div>
-              <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative bg-white/5">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps?q=${encodeURIComponent(branches.find(b => b.id === formData.branch).address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                ></iframe>
+              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
+                <p className="text-xs text-mbRed font-bold uppercase tracking-widest mb-2">Sucursal Seleccionada</p>
+                <h3 className="text-2xl font-['Oswald'] font-bold uppercase mb-2">
+                  {branches.find(b => b.id === formData.branch)?.name}
+                </h3>
+                <p className="text-gray-500 text-sm mb-4">
+                  {branches.find(b => b.id === formData.branch)?.address}
+                </p>
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branches.find(b => b.id === formData.branch)?.address || "")}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  <MapPin className="w-3 h-3" /> Ver ubicación en Google Maps (Opcional)
+                </a>
               </div>
               
-              <div className="pt-4">
-                <button
-                  onClick={nextStep}
-                  className="w-full bg-mbRed text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-all uppercase tracking-[0.2em] shadow-lg shadow-mbRed/30 animate-bounce-subtle"
-                >
-                  Continuar con esta sucursal
-                </button>
-              </div>
+              <button
+                onClick={nextStep}
+                className="w-full bg-mbRed text-white font-bold py-5 rounded-2xl hover:bg-red-700 transition-all uppercase tracking-[0.2em] font-['Oswald'] shadow-xl shadow-mbRed/20"
+              >
+                Continuar reserva
+              </button>
             </div>
           )}
         </div>
@@ -189,7 +329,7 @@ export default function Home() {
             <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">¿Qué servicio buscas?</h2>
             <p className="text-gray-400">Elige la duración de tu cita.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {services.map((service) => (
               <button
                 key={service.id}
@@ -222,7 +362,7 @@ export default function Home() {
             <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu estilista</h2>
             <p className="text-gray-400">Si no tienes preferencia, asignaremos al primero disponible.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {stylists
               .filter(s => s.branch === "all" || s.branch === formData.branch)
               .map((stylist) => (
@@ -243,77 +383,109 @@ export default function Home() {
         </div>
       )}
 
-      {/* STEP 4: DATOS */}
+      {/* STEP 4: DATOS & CITA */}
       {step === 4 && (
         <div key="step4" className="max-w-md mx-auto space-y-6 animate-step-in">
-          <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Volver
+          <button 
+            onClick={() => {
+              if (isRegisteredFlow) setStep(0);
+              else prevStep();
+            }} 
+            className="flex items-center text-sm text-gray-400 hover:text-white transition"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" /> {isRegisteredFlow ? "Cerrar sesión" : "Volver"}
           </button>
+          
           <div className="text-center mb-8">
-            <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Confirma tu cita</h2>
-            <p className="text-gray-400">Ingresa tus datos para completar la reservación.</p>
+            {isRegisteredFlow ? (
+              <>
+                <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">¡Hola de nuevo, {formData.name}!</h2>
+                <p className="text-gray-400">Hemos cargado tus preferencias. Confirma tu próxima cita.</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Confirma tu cita</h2>
+                <p className="text-gray-400">Ingresa tus datos para completar la reservación.</p>
+              </>
+            )}
           </div>
           
           <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
-            <h4 className="font-['Oswald'] uppercase text-gray-400 mb-4 text-sm">Resumen de tu cita</h4>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-['Oswald'] uppercase text-gray-400 text-sm">Resumen de tu selección</h4>
+              {isRegisteredFlow && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsRegisteredFlow(false);
+                    setStep(1);
+                  }}
+                  className="text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded uppercase tracking-tighter transition-all"
+                >
+                  Cambiar preferencias
+                </button>
+              )}
+            </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-400">Sucursal:</span>
-                <span className="font-bold">{branches.find(b => b.id === formData.branch)?.name}</span>
+                <span className="font-bold">{branches.find(b => b.id === formData.branch)?.name || "No seleccionada"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Servicio:</span>
-                <span className="font-bold">{services.find(s => s.id === formData.service)?.name} ({services.find(s => s.id === formData.service)?.duration})</span>
+                <span className="font-bold">{services.find(s => s.id === formData.service)?.name || "No seleccionado"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Estilista:</span>
-                <span className="font-bold">{stylists.find(s => s.id === formData.stylist)?.name}</span>
+                <span className="font-bold">{stylists.find(s => s.id === formData.stylist)?.name || "No seleccionado"}</span>
               </div>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Nombre Completo</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-500" />
+            {!isRegisteredFlow && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nombre</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-mbRed transition-colors"
+                    placeholder="Juan"
+                    value={formData.name}
+                    onChange={(e) => updateData("name", e.target.value)}
+                  />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Apellido</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-mbRed transition-colors"
+                    placeholder="Pérez"
+                    value={formData.surname}
+                    onChange={(e) => updateData("surname", e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {!isRegisteredFlow && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Teléfono (Para SMS)</label>
                 <input
-                  type="text"
+                  type="tel"
                   required
-                  className="w-full bg-black/50 border border-white/20 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-mbRed focus:ring-1 focus:ring-mbRed transition-colors"
-                  placeholder="Juan Pérez"
-                  value={formData.name}
-                  onChange={(e) => updateData("name", e.target.value)}
+                  className="w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-mbRed transition-colors"
+                  placeholder="81 1234 5678"
+                  value={formData.phone}
+                  onChange={(e) => updateData("phone", e.target.value)}
                 />
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Teléfono (Para SMS)</label>
-              <input
-                type="tel"
-                required
-                className="w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-mbRed focus:ring-1 focus:ring-mbRed transition-colors"
-                placeholder="81 1234 5678"
-                value={formData.phone}
-                onChange={(e) => updateData("phone", e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-4 rounded-lg">
-              <input 
-                type="checkbox" 
-                id="sendReminders"
-                className="w-5 h-5 accent-mbRed"
-                checked={formData.sendReminders || false}
-                onChange={(e) => updateData("sendReminders", e.target.checked)}
-              />
-              <label htmlFor="sendReminders" className="text-sm text-gray-300">
-                Enviarme recordatorios por SMS (1 día y 1.5 horas antes)
-              </label>
-            </div>
+            )}
+
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Fecha</label>
+              <label className="block text-sm font-medium mb-1">Fecha de tu cita</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <CalendarIcon className="h-5 w-5 text-gray-500" />
@@ -322,7 +494,7 @@ export default function Home() {
                   type="date"
                   required
                   min={new Date().toISOString().split("T")[0]}
-                  className="w-full bg-black/50 border border-white/20 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-mbRed focus:ring-1 focus:ring-mbRed transition-colors [color-scheme:dark]"
+                  className="w-full bg-black/50 border border-white/20 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-mbRed transition-colors [color-scheme:dark]"
                   value={formData.date}
                   onChange={(e) => updateData("date", e.target.value)}
                 />
@@ -336,7 +508,7 @@ export default function Home() {
                 {isLoadingTimes ? (
                   <div className="flex items-center justify-center p-6 text-gray-400">
                     <div className="w-5 h-5 border-2 border-mbRed border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Buscando horarios libres...
+                    Buscando horarios...
                   </div>
                 ) : closedMessage ? (
                   <div className="bg-red-500/10 text-mbRed p-4 rounded-lg text-center font-bold">
@@ -344,22 +516,27 @@ export default function Home() {
                   </div>
                 ) : availableTimes.length === 0 ? (
                   <div className="bg-white/5 border border-white/10 p-4 rounded-lg text-center text-gray-400">
-                    Lo sentimos, no hay horarios disponibles para esta fecha. Intenta con otro día.
+                    No hay horarios disponibles. Intenta con otro día.
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                    {availableTimes.map((time) => (
+                    {availableTimes.map((slot) => (
                       <button
-                        key={time}
+                        key={slot.time}
                         type="button"
-                        onClick={() => updateData("time", time)}
-                        className={`py-2 px-3 rounded-lg font-bold text-sm transition-all ${
-                          formData.time === time
+                        disabled={!slot.available || slot.past}
+                        onClick={() => updateData("time", slot.time)}
+                        className={`py-2 px-1 rounded-lg font-bold text-xs transition-all flex flex-col items-center justify-center ${
+                          formData.time === slot.time
                             ? "bg-mbRed text-white"
+                            : !slot.available || slot.past
+                            ? "bg-white/5 border border-white/5 text-gray-600 cursor-not-allowed"
                             : "bg-white/5 border border-white/10 hover:border-mbRed/50 hover:bg-mbRed/10 text-gray-300"
                         }`}
                       >
-                        {time}
+                        <span>{slot.time}</span>
+                        {!slot.available && !slot.past && <span className="text-[8px] uppercase opacity-60">Ocupado</span>}
+                        {slot.past && <span className="text-[8px] uppercase opacity-60">Pasado</span>}
                       </button>
                     ))}
                   </div>
@@ -368,15 +545,28 @@ export default function Home() {
               </div>
             )}
 
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-4 rounded-lg">
+              <input 
+                type="checkbox" 
+                id="sendReminders"
+                className="w-5 h-5 accent-mbRed"
+                checked={formData.sendReminders}
+                onChange={(e) => updateData("sendReminders", e.target.checked)}
+              />
+              <label htmlFor="sendReminders" className="text-sm text-gray-300">
+                Enviarme recordatorios por SMS
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={isSubmitting || !formData.time}
-              className="w-full bg-mbRed hover:bg-red-700 text-white font-bold py-4 rounded-lg mt-6 transition-all font-['Oswald'] uppercase tracking-widest flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting || !formData.time || !formData.branch || !formData.service || !formData.stylist}
+              className="w-full bg-mbRed hover:bg-red-700 text-white font-bold py-4 rounded-xl mt-6 transition-all font-['Oswald'] uppercase tracking-widest flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-mbRed/20"
             >
               {isSubmitting ? (
                 <span className="animate-pulse">Procesando...</span>
               ) : (
-                <>Confirmar Cita <ChevronRight className="ml-2 w-5 h-5" /></>
+                <>Confirmar Reservación <ChevronRight className="ml-2 w-5 h-5" /></>
               )}
             </button>
           </form>
@@ -405,12 +595,14 @@ export default function Home() {
           </div>
           <button
             onClick={() => {
-              setStep(1);
-              setFormData({ branch: "", service: "", stylist: "", name: "", phone: "", date: "", time: "" });
+              setStep(0);
+              setFormData({ branch: "", service: "", stylist: "", name: "", surname: "", phone: "", date: "", time: "", sendReminders: true });
+              setIsRegisteredFlow(false);
+              setLookupPhone("");
             }}
             className="text-mbRed hover:text-red-400 font-bold transition-colors font-['Oswald'] uppercase tracking-wider"
           >
-            Hacer otra reservación
+            Volver al inicio
           </button>
         </div>
       )}

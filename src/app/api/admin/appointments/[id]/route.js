@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { CALENDAR_IDS } from "@/lib/constants";
+import { updateAppointmentStatus } from "@/lib/googleSheets";
 
 async function getAuth() {
   return new google.auth.GoogleAuth({
@@ -15,7 +16,7 @@ async function getAuth() {
 export async function DELETE(req, { params }) {
   try {
     const { id } = params;
-    const { branch } = await req.json(); // We need branch to know which calendar
+    const { branch, phone, date, time, status = "Cancelada" } = await req.json(); // We need details to update Sheets
 
     const calendarId = CALENDAR_IDS[branch.toLowerCase()];
     if (!calendarId) return NextResponse.json({ error: "Branch invalid" }, { status: 400 });
@@ -28,6 +29,11 @@ export async function DELETE(req, { params }) {
       eventId: id,
     });
 
+    // Update status in Sheets
+    if (phone && date && time) {
+      await updateAppointmentStatus(phone, date, time, status);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting event:", error);
@@ -38,10 +44,8 @@ export async function DELETE(req, { params }) {
 export async function PATCH(req, { params }) {
   try {
     const { id } = params;
-    const { branch, date, time, stylistName, serviceName, name, phone } = await req.json();
-
-    const calendarId = CALENDAR_IDS[branch.toLowerCase()];
-    if (!calendarId) return NextResponse.json({ error: "Branch invalid" }, { status: 400 });
+    const body = await req.json();
+    const { branch, oldBranch, date, time, stylistName, serviceName, name, phone } = body;
 
     const auth = await getAuth();
     const calendar = google.calendar({ version: "v3", auth });
@@ -64,11 +68,33 @@ export async function PATCH(req, { params }) {
       },
     };
 
-    await calendar.events.patch({
-      calendarId,
-      eventId: id,
-      requestBody: event,
-    });
+    // If branch changed, we must delete from old and insert into new
+    if (oldBranch && branch.toLowerCase() !== oldBranch.toLowerCase()) {
+      const oldCalendarId = CALENDAR_IDS[oldBranch.toLowerCase()];
+      const newCalendarId = CALENDAR_IDS[branch.toLowerCase()];
+
+      if (oldCalendarId) {
+        await calendar.events.delete({ calendarId: oldCalendarId, eventId: id });
+      }
+
+      if (newCalendarId) {
+        const newEvent = await calendar.events.insert({
+          calendarId: newCalendarId,
+          requestBody: event,
+        });
+        return NextResponse.json({ success: true, newId: newEvent.data.id });
+      }
+    } else {
+      // Normal patch in same calendar
+      const calendarId = CALENDAR_IDS[branch.toLowerCase()];
+      if (!calendarId) return NextResponse.json({ error: "Branch invalid" }, { status: 400 });
+
+      await calendar.events.patch({
+        calendarId,
+        eventId: id,
+        requestBody: event,
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
