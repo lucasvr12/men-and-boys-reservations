@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { saveAppointment } from "@/lib/googleSheets";
 import { saveCustomer } from "@/lib/postgres";
+import { stylists } from "@/lib/constants";
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ const SERVICE_DURATIONS = {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { name, phone, date, time, branch, service, stylist, stylistName, branchName, serviceName } = body;
+    let { name, phone, date, time, branch, service, stylist, stylistName, branchName, serviceName } = body;
 
     const calendarId = CALENDAR_IDS[branch];
     if (!calendarId) {
@@ -37,13 +38,73 @@ export async function POST(req) {
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        // Replace escaped newlines so the private key is parsed correctly
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       },
       scopes: ["https://www.googleapis.com/auth/calendar.events"],
     });
 
     const calendar = google.calendar({ version: "v3", auth });
+
+    // --- AUTO-ASSIGN STYLIST if "any" ---
+    if (stylist === "any" || !stylistName || stylistName === "Sin preferencia") {
+      const branchStylists = stylists.filter(s => s.branch === branch && s.canTakeAppointments);
+
+      if (branchStylists.length > 0) {
+        // Fetch today's events to count appointments per stylist
+        const timeMin = new Date(`${date}T00:00:00-06:00`).toISOString();
+        const timeMax = new Date(`${date}T23:59:59-06:00`).toISOString();
+        let dayEvents = [];
+        try {
+          const res = await calendar.events.list({ calendarId, timeMin, timeMax, singleEvents: true });
+          dayEvents = res.data.items || [];
+        } catch (_) {}
+
+        // Count appointments per stylist name
+        const appointmentCounts = {};
+        branchStylists.forEach(s => { appointmentCounts[s.name] = 0; });
+
+        dayEvents.forEach(event => {
+          const desc = event.description || "";
+          const match = desc.match(/(?:Estilista|Barbero):\s*(.*)/);
+          if (match) {
+            const name = match[1].trim();
+            if (appointmentCounts[name] !== undefined) {
+              appointmentCounts[name]++;
+            }
+          }
+        });
+
+        // Also check: who is free at this specific time slot?
+        const durationMins = SERVICE_DURATIONS[service] || 30;
+        const slotStart = new Date(`${date}T${time}:00-06:00`);
+        const slotEnd = new Date(slotStart.getTime() + durationMins * 60000);
+        const busyAtSlot = new Set();
+        dayEvents.forEach(event => {
+          const eStart = new Date(event.start.dateTime || event.start.date);
+          const eEnd = new Date(event.end.dateTime || event.end.date);
+          if (slotStart < eEnd && slotEnd > eStart) {
+            const desc = event.description || "";
+            const match = desc.match(/(?:Estilista|Barbero):\s*(.*)/);
+            if (match) busyAtSlot.add(match[1].trim());
+          }
+        });
+
+        // Pick the free stylist with fewest appointments (equitable distribution)
+        const freeStylists = branchStylists.filter(s => !busyAtSlot.has(s.name));
+        if (freeStylists.length > 0) {
+          freeStylists.sort((a, b) => (appointmentCounts[a.name] || 0) - (appointmentCounts[b.name] || 0));
+          const assigned = freeStylists[0];
+          stylist = assigned.id;
+          stylistName = assigned.name;
+        } else {
+          // Fallback: pick least busy even if technically busy (shouldn't happen if availability check works)
+          branchStylists.sort((a, b) => (appointmentCounts[a.name] || 0) - (appointmentCounts[b.name] || 0));
+          stylistName = branchStylists[0].name;
+          stylist = branchStylists[0].id;
+        }
+      }
+    }
+    // --- END AUTO-ASSIGN ---
 
     // Calculate start and end datetime
     const startDateTime = new Date(`${date}T${time}:00-06:00`); // Assuming Monterrey Timezone (CST/CDT)

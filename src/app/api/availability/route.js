@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { CALENDAR_IDS, SERVICE_DURATIONS, stylists } from "@/lib/constants";
 import { getVacations } from "@/lib/googleSheets";
 
+const MAX_CONCURRENT_BOOKINGS = 4;
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -66,46 +68,38 @@ export async function GET(request) {
       events = response.data.items || [];
     }
 
-    // Get the list of real stylists for this branch
+    // Get real stylists for this branch
     const branchStylists = stylists.filter(s => s.branch === branch && s.canTakeAppointments);
-    const totalStylistsCount = branchStylists.length;
 
     // Check for Vacations
     const vacations = await getVacations();
-    const stylistOnVacation = vacations.find(v => 
-      v.stylistId === selectedStylistId && 
-      date >= v.startDate && 
+    const stylistOnVacation = vacations.find(v =>
+      v.stylistId === selectedStylistId &&
+      date >= v.startDate &&
       date <= v.endDate
     );
 
     if (stylistOnVacation) {
-      return NextResponse.json({ 
-        availableSlots: [], 
+      return NextResponse.json({
+        availableSlots: [],
         status: "vacation",
         message: `Estilista en vacaciones (del ${stylistOnVacation.startDate} al ${stylistOnVacation.endDate})`
       });
     }
 
-    const resultSlots = slots.map((slotTime) => {
-      const slotStart = new Date(`${date}T${slotTime}:00-06:00`);
-      const slotEnd = new Date(slotStart.getTime() + durationMins * 60000);
+    // Helper: get busy stylists and total bookings count at a given slot
+    const getSlotInfo = (slotStart, slotEnd) => {
+      const busyNames = new Set();
+      let totalBookings = 0;
 
-      // Past check
-      const now = new Date();
-      if (slotStart < now) return { time: slotTime, available: false, past: true };
-
-      // Find which stylists are busy at this time
-      const busyStylistsNames = new Set();
-      
       events.forEach(event => {
         const eventStart = new Date(event.start.dateTime || event.start.date);
         const eventEnd = new Date(event.end.dateTime || event.end.date);
 
-        // Check for overlap
         if (slotStart < eventEnd && slotEnd > eventStart) {
           const description = event.description || "";
           const summary = event.summary || "";
-          
+
           let stylistName = null;
           const stylistMatch = description.match(/(?:Estilista|Barbero):\s*(.*)/);
           if (stylistMatch) {
@@ -117,16 +111,34 @@ export async function GET(request) {
             }
           }
 
-          if (stylistName) busyStylistsNames.add(stylistName);
+          if (stylistName) busyNames.add(stylistName);
+          totalBookings++;
         }
       });
 
+      return { busyNames, totalBookings };
+    };
+
+    const resultSlots = slots.map((slotTime) => {
+      const slotStart = new Date(`${date}T${slotTime}:00-06:00`);
+      const slotEnd = new Date(slotStart.getTime() + durationMins * 60000);
+
+      // Past check
+      const now = new Date();
+      if (slotStart < now) return { time: slotTime, available: false, past: true };
+
+      const { busyNames, totalBookings } = getSlotInfo(slotStart, slotEnd);
+
       let isAvailable = false;
+
       if (selectedStylistId === "any") {
-        isAvailable = busyStylistsNames.size < totalStylistsCount;
+        // Under global cap AND at least one stylist is free
+        const freeStylists = branchStylists.filter(s => !busyNames.has(s.name));
+        isAvailable = totalBookings < MAX_CONCURRENT_BOOKINGS && freeStylists.length > 0;
       } else {
+        // Specific stylist: she must be free AND global cap not hit
         const selectedStylist = stylists.find(s => s.id === selectedStylistId);
-        isAvailable = !busyStylistsNames.has(selectedStylist?.name);
+        isAvailable = !busyNames.has(selectedStylist?.name) && totalBookings < MAX_CONCURRENT_BOOKINGS;
       }
 
       return { time: slotTime, available: isAvailable };
@@ -140,4 +152,3 @@ export async function GET(request) {
 }
 
 export const dynamic = 'force-dynamic';
-
