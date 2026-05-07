@@ -25,6 +25,8 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Metrics State
+  const [metrics, setMetrics] = useState(null);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   
   // Customers State
