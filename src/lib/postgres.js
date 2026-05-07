@@ -40,26 +40,36 @@ export async function saveCustomer(customerData) {
   const { phone, name, surname, branch, stylist, service, day, time } = customerData;
   
   try {
+    await initDB();
     const existing = await getCustomerByPhone(phone);
     
+    // Convert undefined to null for Postgres
+    const pName = name || null;
+    const pSurname = surname || null;
+    const pBranch = branch || null;
+    const pStylist = stylist || null;
+    const pService = service || null;
+    const pDay = day || null;
+    const pTime = time || null;
+
     if (existing) {
       await sql`
         UPDATE customers 
         SET 
-          name = ${name}, 
-          surname = ${surname}, 
-          branch = ${branch}, 
-          stylist = ${stylist}, 
-          service = ${service}, 
-          day = ${day}, 
-          time = ${time},
+          name = ${pName}, 
+          surname = ${pSurname}, 
+          branch = ${pBranch}, 
+          stylist = ${pStylist}, 
+          service = ${pService}, 
+          day = ${pDay}, 
+          time = ${pTime},
           updated_at = CURRENT_TIMESTAMP
         WHERE phone = ${phone};
       `;
     } else {
       await sql`
         INSERT INTO customers (phone, name, surname, branch, stylist, service, day, time)
-        VALUES (${phone}, ${name}, ${surname}, ${branch}, ${stylist}, ${service}, ${day}, ${time});
+        VALUES (${phone}, ${pName}, ${pSurname}, ${pBranch}, ${pStylist}, ${pService}, ${pDay}, ${pTime});
       `;
     }
     return true;

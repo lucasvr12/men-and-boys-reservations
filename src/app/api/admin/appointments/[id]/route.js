@@ -18,7 +18,12 @@ export async function DELETE(req, { params }) {
     const { id } = params;
     const { branch, phone, date, time, status = "Cancelada" } = await req.json(); // We need details to update Sheets
 
-    const calendarId = CALENDAR_IDS[branch.toLowerCase()];
+    let branchId = branch.toLowerCase();
+    if (branch === "Misión del Valle") branchId = "mision";
+    if (branch === "Carretera Nacional") branchId = "nacional";
+    if (branch === "Carrizalejo") branchId = "carrizalejo";
+
+    const calendarId = CALENDAR_IDS[branchId];
     if (!calendarId) return NextResponse.json({ error: "Branch invalid" }, { status: 400 });
 
     const auth = await getAuth();
@@ -70,8 +75,18 @@ export async function PATCH(req, { params }) {
 
     // If branch changed, we must delete from old and insert into new
     if (oldBranch && branch.toLowerCase() !== oldBranch.toLowerCase()) {
-      const oldCalendarId = CALENDAR_IDS[oldBranch.toLowerCase()];
-      const newCalendarId = CALENDAR_IDS[branch.toLowerCase()];
+      let oldBranchId = oldBranch.toLowerCase();
+      if (oldBranch === "Misión del Valle") oldBranchId = "mision";
+      if (oldBranch === "Carretera Nacional") oldBranchId = "nacional";
+      if (oldBranch === "Carrizalejo") oldBranchId = "carrizalejo";
+
+      let newBranchId = branch.toLowerCase();
+      if (branch === "Misión del Valle") newBranchId = "mision";
+      if (branch === "Carretera Nacional") newBranchId = "nacional";
+      if (branch === "Carrizalejo") newBranchId = "carrizalejo";
+
+      const oldCalendarId = CALENDAR_IDS[oldBranchId];
+      const newCalendarId = CALENDAR_IDS[newBranchId];
 
       if (oldCalendarId) {
         await calendar.events.delete({ calendarId: oldCalendarId, eventId: id });
@@ -86,7 +101,12 @@ export async function PATCH(req, { params }) {
       }
     } else {
       // Normal patch in same calendar
-      const calendarId = CALENDAR_IDS[branch.toLowerCase()];
+      let patchBranchId = branch.toLowerCase();
+      if (branch === "Misión del Valle") patchBranchId = "mision";
+      if (branch === "Carretera Nacional") patchBranchId = "nacional";
+      if (branch === "Carrizalejo") patchBranchId = "carrizalejo";
+
+      const calendarId = CALENDAR_IDS[patchBranchId];
       if (!calendarId) return NextResponse.json({ error: "Branch invalid" }, { status: 400 });
 
       await calendar.events.patch({
