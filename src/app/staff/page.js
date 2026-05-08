@@ -492,60 +492,96 @@ export default function StaffAgenda() {
           <div className="py-20 text-center">
             <div className="w-8 h-8 border-4 border-mbRed border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           </div>
-        ) : dayAppointments.length === 0 ? (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-16 text-center">
-            <p className="text-gray-500 italic">No tienes citas programadas para hoy.</p>
-          </div>
         ) : (
-          <div className="grid gap-3">
-            {dayAppointments
-              .filter(app => {
-                if (agendaMode === "personal") return true; // dayAppointments is already filtered for stylist
-                return true; // if in branch mode, it's already filtered for branch in useEffect/filterDay
-              })
-              .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
-              .map((app, i) => (
-                <div 
-                  key={i} 
-                  className="group relative bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-5 hover:bg-white/[0.08] hover:border-white/20 transition-all cursor-pointer shadow-lg"
-                  onClick={() => setEditingApp(app)}
-                >
-                  <div className="w-16 h-16 bg-mbRed/20 text-mbRed rounded-2xl flex flex-col items-center justify-center font-bold font-['Oswald'] shrink-0 border border-mbRed/10">
-                    <span className="text-2xl leading-none">{(app.time || "00:00").split(":")[0]}</span>
-                    <span className="text-xs">:{((app.time || "00:00").split(":")[1])}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold font-['Oswald'] uppercase text-xl text-white truncate">
-                      {app.name || "Sin nombre"}
-                    </p>
-                    <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-400">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-mbRed/60" /> {app.time}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        )}
+          <div className="overflow-x-auto rounded-2xl border border-white/10 animate-fade-in">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-black/60 border-b border-white/10">
+                  <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Hora</th>
+                  <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Estado</th>
+                  <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden md:table-cell">Cliente</th>
+                  <th className="text-center px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  // Build merged list of all 30-min slots from 10:00 to 20:00
+                  const allSlots = [];
+                  for (let h = 10; h < 20; h++) {
+                    for (let m = 0; m < 60; m += 30) {
+                      allSlots.push(`${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`);
+                    }
+                  }
+                  const stylistName = stylists.find(s => s.id === selectedStylist)?.name;
+                  return allSlots.map(slotTime => {
+                    const app = dayAppointments
+                      .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
+                      .find(a => a.time === slotTime);
+                    const timelineSlot = dayTimeline.find(t => t.time === slotTime);
+                    const isPast = timelineSlot?.past;
+                    const isBusy = app || (timelineSlot && !timelineSlot.available && !timelineSlot?.past);
+                    const isBlock = app && ((app.name || "").includes("COMIDA") || (app.name || "").includes("VACACIONES") || (app.name || "").includes("BLOQUEO"));
 
-        {/* Timeline Preview (Gaps) */}
-        {!isLoading && dayTimeline.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-white/5">
-            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Línea de Tiempo (15 min)</h3>
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-              {dayTimeline.map((slot) => (
-                <div 
-                  key={slot.time}
-                  className={`py-2 px-1 rounded-lg text-[10px] font-bold text-center border ${
-                    slot.available 
-                      ? "bg-green-500/10 border-green-500/20 text-green-500" 
-                      : "bg-white/5 border-white/10 text-gray-600"
-                  }`}
-                >
-                  {slot.time}
-                  {!slot.available && <div className="text-[8px] opacity-40">OCUPADO</div>}
-                </div>
-              ))}
-            </div>
+                    return (
+                      <tr
+                        key={slotTime}
+                        className={`border-b border-white/5 transition-colors ${
+                          isPast ? "opacity-30" :
+                          isBlock ? "bg-yellow-500/5" :
+                          app ? "bg-mbRed/5 hover:bg-mbRed/10" :
+                          "hover:bg-white/5"
+                        }`}
+                      >
+                        <td className="px-5 py-3">
+                          <span className={`font-bold font-['Oswald'] text-base ${app ? "text-mbRed" : "text-gray-600"}`}>
+                            {slotTime}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3">
+                          {app ? (
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                              isBlock ? "bg-yellow-500/20 text-yellow-400" : "bg-mbRed/20 text-mbRed"
+                            }`}>
+                              {isBlock ? "Bloqueo" : "Reservada"}
+                            </span>
+                          ) : isPast ? (
+                            <span className="text-[10px] text-gray-600 uppercase tracking-widest">Pasado</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-green-500/10 text-green-500">
+                              Disponible
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 hidden md:table-cell">
+                          <span className="font-semibold text-white">
+                            {app ? (app.name || "Sin nombre") : "—"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-center">
+                          {app ? (
+                            <button
+                              onClick={() => setEditingApp(app)}
+                              className="p-2 bg-white/5 text-gray-400 rounded-lg hover:bg-white/10 hover:text-white transition-all"
+                              title="Editar"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          ) : !isPast ? (
+                            <button
+                              onClick={() => { setIsQuickAdding(true); setQuickAppData(prev => ({...prev, time: slotTime})); }}
+                              className="p-2 bg-white/5 text-gray-600 rounded-lg hover:bg-mbRed/20 hover:text-mbRed transition-all"
+                              title="Agregar cita"
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                            </button>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

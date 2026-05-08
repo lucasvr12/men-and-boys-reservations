@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [allMonthlyAppointments, setAllMonthlyAppointments] = useState([]);
   const [stylistSettings, setStylistSettings] = useState({});
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
+  const [filterBranch, setFilterBranch] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -342,50 +343,101 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {/* Branch Filter Buttons */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button
+                onClick={() => setFilterBranch("all")}
+                className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
+                  filterBranch === "all" ? "bg-mbRed text-white" : "bg-white/5 border border-white/10 text-gray-400 hover:text-white"
+                }`}
+              >
+                Todas
+              </button>
+              {branches.map(b => (
+                <button
+                  key={b.id}
+                  onClick={() => setFilterBranch(b.id)}
+                  className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
+                    filterBranch === b.id ? "bg-mbRed text-white" : "bg-white/5 border border-white/10 text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {b.name}
+                </button>
+              ))}
+            </div>
+
             {isLoading ? (
               <div className="text-center py-20 flex flex-col items-center">
                 <div className="w-10 h-10 border-4 border-mbRed border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-gray-500 text-sm">Actualizando agenda...</p>
               </div>
-            ) : appointments.length === 0 ? (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-20 text-center text-gray-500 italic">
-                No hay citas ni bloqueos registrados para este día.
-              </div>
-            ) : (
-              <div className="grid gap-4 animate-fade-in">
-                {appointments.map((app) => (
-                  <div key={app.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/30 transition-all group shadow-lg hover:shadow-mbRed/5">
-                    <div className="flex items-start gap-4 text-white">
-                      <div className="w-14 h-14 bg-mbRed/20 text-mbRed rounded-xl flex items-center justify-center font-bold text-xl font-['Oswald']">
-                        {(app.time || "00:00").split(":")[0]}
-                        <span className="text-[10px] ml-0.5">:{((app.time || "00:00").split(":")[1])}</span>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg font-['Oswald'] uppercase tracking-wide flex items-center gap-2 text-white">
-                          {app.name || "Sin nombre"}
-                          {(app.name || "").includes("COMIDA") && <Coffee className="w-4 h-4 text-yellow-500" />}
-                          {(app.name || "").includes("VACACIONES") && <Umbrella className="w-4 h-4 text-blue-500" />}
-                        </h3>
-                        <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2 text-sm text-gray-400">
-                          <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-mbRed/60" /> {app.time}</span>
-                          <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-mbRed/60" /> {app.branch}</span>
-                          <span className="flex items-center gap-1.5"><User className="w-4 h-4 text-mbRed/60" /> {app.stylist}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button 
-                        onClick={() => setEditingApp(app)}
-                        className="p-3 bg-white/5 text-gray-400 rounded-xl hover:bg-white/10 hover:text-white transition-all"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            ) : (() => {
+              const filtered = appointments.filter(app => {
+                if (filterBranch === "all") return true;
+                const branchObj = branches.find(b => b.id === filterBranch);
+                return (app.branch || "").toLowerCase().includes(filterBranch) ||
+                       app.branch === branchObj?.name;
+              });
+              if (filtered.length === 0) return (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-16 text-center text-gray-500 italic">
+                  No hay citas para {filterBranch === "all" ? "este día" : branches.find(b => b.id === filterBranch)?.name}.
+                </div>
+              );
+              return (
+                <div className="overflow-x-auto rounded-2xl border border-white/10 animate-fade-in">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-black/60 border-b border-white/10">
+                        <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Hora</th>
+                        <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cliente</th>
+                        <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden md:table-cell">Sucursal</th>
+                        <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden md:table-cell">Estilista</th>
+                        <th className="text-center px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered
+                        .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
+                        .map((app, i) => (
+                        <tr
+                          key={app.id || i}
+                          className={`border-b border-white/5 hover:bg-white/5 transition-colors ${
+                            (app.name || "").includes("COMIDA") ? "bg-yellow-500/5" :
+                            (app.name || "").includes("VACACIONES") ? "bg-blue-500/5" : ""
+                          }`}
+                        >
+                          <td className="px-5 py-4">
+                            <span className="font-bold font-['Oswald'] text-mbRed text-lg">{app.time || "—"}</span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="font-bold text-white flex items-center gap-2">
+                              {app.name || "Sin nombre"}
+                              {(app.name || "").includes("COMIDA") && <Coffee className="w-3 h-3 text-yellow-500" />}
+                              {(app.name || "").includes("VACACIONES") && <Umbrella className="w-3 h-3 text-blue-400" />}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 hidden md:table-cell">
+                            <span className="text-gray-400 text-xs">{app.branch || "—"}</span>
+                          </td>
+                          <td className="px-5 py-4 hidden md:table-cell">
+                            <span className="text-gray-400 text-xs">{app.stylist || "—"}</span>
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            <button
+                              onClick={() => setEditingApp(app)}
+                              className="p-2 bg-white/5 text-gray-400 rounded-lg hover:bg-white/10 hover:text-white transition-all"
+                              title="Editar"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Monthly Calendar Integration */}
