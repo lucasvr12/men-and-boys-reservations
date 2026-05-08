@@ -2,28 +2,21 @@ import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { saveAppointment } from "@/lib/googleSheets";
 import { saveCustomer } from "@/lib/postgres";
-import { stylists } from "@/lib/constants";
+import { stylists, SERVICE_DURATIONS, servicesCatalog } from "@/lib/constants";
 
 export const dynamic = 'force-dynamic';
 
-// Define calendar IDs based on branch
+// Calendar IDs per branch
 const CALENDAR_IDS = {
   carrizalejo: process.env.CALENDAR_ID_CARRIZALEJO,
   mision: process.env.CALENDAR_ID_MISION,
   nacional: process.env.CALENDAR_ID_NACIONAL,
 };
 
-// Map service duration to minutes
-const SERVICE_DURATIONS = {
-  "15min": 15,
-  "30min": 30,
-  "60min": 60,
-};
-
 export async function POST(req) {
   try {
     const body = await req.json();
-    let { name, phone, date, time, branch, service, stylist, stylistName, branchName, serviceName } = body;
+    let { name, phone, date, time, branch, service, stylist, stylistName, branchName, serviceName, durationMins } = body;
 
     const calendarId = CALENDAR_IDS[branch];
     if (!calendarId) {
@@ -107,9 +100,12 @@ export async function POST(req) {
     // --- END AUTO-ASSIGN ---
 
     // Calculate start and end datetime
-    const startDateTime = new Date(`${date}T${time}:00-06:00`); // Assuming Monterrey Timezone (CST/CDT)
-    const durationMinutes = SERVICE_DURATIONS[service] || 30;
+    const startDateTime = new Date(`${date}T${time}:00-06:00`);
+    // Priority: explicit durationMins from client → SERVICE_DURATIONS catalog → 30 min default
+    const durationMinutes = durationMins || SERVICE_DURATIONS[service] || 30;
     const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000);
+
+    console.log(`[Booking] Service: ${serviceName} | Duration: ${durationMinutes} min | ${date} ${time}`);
 
     const event = {
       summary: `Cita: ${name} - ${serviceName}`,

@@ -134,6 +134,7 @@ export default function Home() {
           ...formData,
           branchName: branches.find(b => b.id === formData.branch)?.name,
           serviceName: servicesCatalog.find(s => s.id === formData.service)?.name,
+          durationMins: servicesCatalog.find(s => s.id === formData.service)?.durationMins,
           stylistName: stylists.find(s => s.id === formData.stylist)?.name,
         }),
       });
