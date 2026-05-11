@@ -28,6 +28,29 @@ export default function Home() {
   const [availableTimes, setAvailableTimes] = useState([]);
   const [isLoadingTimes, setIsLoadingTimes] = useState(false);
   const [closedMessage, setClosedMessage] = useState("");
+  const [dynamicServices, setDynamicServices] = useState([]);
+  const [dynamicEmployees, setDynamicEmployees] = useState([]);
+  const [isLoadingDynamic, setIsLoadingDynamic] = useState(true);
+
+  useEffect(() => {
+    const loadDynamicData = async () => {
+      try {
+        const [servRes, empRes] = await Promise.all([
+          fetch('/api/admin/services'),
+          fetch('/api/admin/employees')
+        ]);
+        const servData = await servRes.json();
+        const empData = await empRes.json();
+        setDynamicServices(servData.services?.filter(s => s.active) || servicesCatalog);
+        setDynamicEmployees(empData.employees || stylists);
+      } catch (err) {
+        console.error("Error loading dynamic data:", err);
+      } finally {
+        setIsLoadingDynamic(false);
+      }
+    };
+    loadDynamicData();
+  }, []);
 
   const nextStep = () => setStep((s) => (s < 1 ? 1 : s + 1));
   const prevStep = () => {
@@ -362,47 +385,54 @@ export default function Home() {
           </div>
           
           <div className="space-y-4">
-            {Array.from(new Set(servicesCatalog.filter(s => s.branches.includes(formData.branch)).map(s => s.category))).map(category => {
-              const catServices = servicesCatalog.filter(s => s.branches.includes(formData.branch) && s.category === category);
-              const isExpanded = expandedCategory === category;
-              
-              return (
-                <div key={category} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-300">
-                  <button
-                    onClick={() => setExpandedCategory(isExpanded ? null : category)}
-                    className={`w-full p-6 flex justify-between items-center transition-colors ${isExpanded ? "bg-mbRed/10 border-b border-mbRed/20" : "hover:bg-white/10"}`}
-                  >
-                    <h3 className={`text-2xl font-['Oswald'] font-bold uppercase tracking-wide ${isExpanded ? "text-mbRed" : "text-white"}`}>{category}</h3>
-                    <ChevronRight className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${isExpanded ? "rotate-90 text-mbRed" : ""}`} />
-                  </button>
-                  
-                  <div 
-                    className="transition-all duration-500 ease-in-out overflow-hidden"
-                    style={{ maxHeight: isExpanded ? `${catServices.length * 150}px` : "0px", opacity: isExpanded ? 1 : 0 }}
-                  >
-                    <div className="p-4 grid gap-3">
-                      {catServices.map((service) => (
+            {Object.keys(dynamicServices.reduce((acc, s) => ({ ...acc, [s.category]: true }), {})).map(category => (
+              <div key={category} className="space-y-4">
+                <button 
+                  onClick={() => setExpandedCategory(expandedCategory === category ? "" : category)}
+                  className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all ${
+                    expandedCategory === category 
+                    ? 'bg-mbRed border-mbRed shadow-lg shadow-mbRed/20' 
+                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <span className="font-['Oswald'] font-bold uppercase tracking-widest text-lg">
+                    {category === 'HAIRSTUDIO' ? '✂️ CORTE Y PEINADO' : 
+                     category === 'AFEITADO' ? '🪒 BARBA Y AFEITADO' : 
+                     category === 'SPA' ? '🧖 SPA Y TRATAMIENTOS' : 
+                     category}
+                  </span>
+                  <ChevronRight className={`w-6 h-6 transition-transform ${expandedCategory === category ? 'rotate-90' : ''}`} />
+                </button>
+                
+                {expandedCategory === category && (
+                  <div className="grid gap-3 animate-fade-in pl-2">
+                    {dynamicServices
+                      .filter(s => s.category === category)
+                      .map(service => (
                         <button
                           key={service.id}
-                          onClick={() => handleServiceSelect(service.id)}
-                          className={`flex flex-col text-left p-5 border rounded-xl transition-all duration-300 hover:-translate-y-1 ${
-                            formData.service === service.id
-                              ? "border-mbRed bg-mbRed/10 shadow-lg shadow-mbRed/20"
-                              : "border-white/10 bg-black/40 hover:border-white/30 hover:bg-white/10"
+                          onClick={() => {
+                            updateData("service", service.id);
+                            nextStep();
+                          }}
+                          className={`group flex items-center justify-between p-5 rounded-2xl border transition-all ${
+                            formData.service === service.id 
+                            ? 'bg-mbRed/20 border-mbRed shadow-inner' 
+                            : 'bg-black/40 border-white/5 hover:border-mbRed/50'
                           }`}
                         >
-                          <div className="flex justify-between items-start w-full mb-2">
-                            <h4 className="text-lg font-bold font-['Oswald'] uppercase text-white pr-4 leading-tight">{service.name}</h4>
-                            <span className="font-bold text-mbRed whitespace-nowrap bg-mbRed/10 px-3 py-1 rounded-full text-sm">{service.price}</span>
+                          <div className="text-left">
+                            <p className={`font-bold uppercase tracking-wide transition-colors ${formData.service === service.id ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                              {service.name}
+                            </p>
                           </div>
-                          {/* Time duration hidden per user request */}
+                          <span className="font-['Oswald'] font-bold text-mbRed">{service.price}</span>
                         </button>
                       ))}
-                    </div>
                   </div>
-                </div>
-              );
-            })}
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -417,23 +447,50 @@ export default function Home() {
             <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu estilista</h2>
             <p className="text-gray-400">Si no tienes preferencia, asignaremos al primero disponible.</p>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {stylists
-              .filter(s => s.branch === "all" || s.branch === formData.branch)
+          <div className="grid gap-4">
+            {dynamicEmployees
+              .filter((s) => s.branch === formData.branch || s.branch === "all")
               .map((stylist) => (
                 <button
                   key={stylist.id}
-                  onClick={() => handleStylistSelect(stylist.id)}
-                  className={`flex flex-col items-center p-6 border rounded-xl transition-all duration-300 hover:-translate-y-1 ${
-                    formData.stylist === stylist.id
-                      ? "border-mbRed bg-mbRed/10"
-                      : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"
+                  onClick={() => {
+                    updateData("stylist", stylist.name);
+                    nextStep();
+                  }}
+                  className={`flex items-center gap-5 p-5 rounded-3xl border transition-all ${
+                    formData.stylist === stylist.name 
+                    ? 'bg-mbRed border-mbRed shadow-lg shadow-mbRed/20' 
+                    : 'bg-white/5 border-white/10 hover:border-white/20'
                   }`}
                 >
-                  <img src={stylist.img} alt={stylist.name} className="w-20 h-20 rounded-full mb-4 object-cover border-2 border-transparent" />
-                  <h3 className="font-bold font-['Oswald'] uppercase text-center">{stylist.name}</h3>
+                  <img src={stylist.img} alt={stylist.name} className="w-16 h-16 rounded-full object-cover border-2 border-white/10" />
+                  <div className="text-left">
+                    <p className="font-['Oswald'] font-bold uppercase tracking-widest text-lg leading-tight">{stylist.name}</p>
+                    <p className="text-xs text-gray-400 mt-1 uppercase tracking-tighter">Disponible hoy</p>
+                  </div>
                 </button>
               ))}
+            
+            {/* Opción Sin Preferencia */}
+            <button
+              onClick={() => {
+                updateData("stylist", "Sin preferencia");
+                nextStep();
+              }}
+              className={`flex items-center gap-5 p-5 rounded-3xl border transition-all ${
+                formData.stylist === "Sin preferencia" 
+                ? 'bg-mbRed border-mbRed shadow-lg shadow-mbRed/20' 
+                : 'bg-white/5 border-white/10 hover:border-white/20'
+              }`}
+            >
+              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                <User className="w-8 h-8 text-gray-400" />
+              </div>
+              <div className="text-left">
+                <p className="font-['Oswald'] font-bold uppercase tracking-widest text-lg leading-tight">Cualquiera disponible</p>
+                <p className="text-xs text-gray-400 mt-1 uppercase tracking-tighter">Asignación automática</p>
+              </div>
+            </button>
           </div>
         </div>
       )}
@@ -465,17 +522,6 @@ export default function Home() {
             )}
           </div>
           
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="font-['Oswald'] uppercase text-gray-400 text-sm">Resumen de tu selección</h4>
-              {isRegisteredFlow && (
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setIsRegisteredFlow(false);
-                    setStep(1);
-                  }}
-                  className="text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded uppercase tracking-tighter transition-all"
                 >
                   Cambiar preferencias
                 </button>

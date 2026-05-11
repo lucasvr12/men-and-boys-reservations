@@ -1,9 +1,28 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
-import { CALENDAR_IDS, SERVICE_DURATIONS, stylists } from "@/lib/constants";
+import { CALENDAR_IDS } from "@/lib/constants";
 import { getVacations } from "@/lib/googleSheets";
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const MAX_CONCURRENT_BOOKINGS = 4;
+
+async function getManagedData() {
+  try {
+    const empPath = path.join(process.cwd(), 'src/data/employees.json');
+    const servPath = path.join(process.cwd(), 'src/data/services.json');
+    const [empData, servData] = await Promise.all([
+      fs.readFile(empPath, 'utf8'),
+      fs.readFile(servPath, 'utf8')
+    ]);
+    return {
+      employees: JSON.parse(empData),
+      services: JSON.parse(servData)
+    };
+  } catch (err) {
+    return { employees: [], services: [] };
+  }
+}
 
 export async function GET(request) {
   try {
@@ -13,6 +32,8 @@ export async function GET(request) {
     const serviceDuration = searchParams.get("duration") || "30min";
     const selectedStylistId = searchParams.get("stylist") || "any";
     const step = parseInt(searchParams.get("step") || "30"); // 15 for staff, 30 for clients
+
+    const { employees, services } = await getManagedData();
 
     if (!date || !branch) {
       return NextResponse.json({ error: "Faltan parámetros." }, { status: 400 });
@@ -32,7 +53,8 @@ export async function GET(request) {
     const closingHour = dayOfWeek === 6 ? 19 : 20;
 
     const slots = [];
-    const durationMins = SERVICE_DURATIONS[serviceDuration] || 30;
+    const service = services.find(s => s.id === serviceDuration);
+    const durationMins = service ? service.durationMins : 30;
     const lastPossibleStartMin = (closingHour * 60) - durationMins;
 
     for (let h = openingHour; h < closingHour; h++) {
@@ -69,7 +91,7 @@ export async function GET(request) {
     }
 
     // Get real stylists for this branch
-    const branchStylists = stylists.filter(s => s.branch === branch && s.canTakeAppointments);
+    const branchStylists = employees.filter(s => s.branch === branch && s.canTakeAppointments);
 
     // Check for Vacations
     const vacations = await getVacations();
@@ -137,7 +159,8 @@ export async function GET(request) {
         isAvailable = totalBookings < MAX_CONCURRENT_BOOKINGS && freeStylists.length > 0;
       } else {
         // Specific stylist: she must be free AND global cap not hit
-        const selectedStylist = stylists.find(s => s.id === selectedStylistId);
+        // Support searching by name (from frontend) or ID
+        const selectedStylist = employees.find(s => s.id === selectedStylistId || s.name === selectedStylistId);
         isAvailable = !busyNames.has(selectedStylist?.name) && totalBookings < MAX_CONCURRENT_BOOKINGS;
       }
 

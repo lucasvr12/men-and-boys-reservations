@@ -44,6 +44,8 @@ export default function AdminDashboard() {
   const [managedEmployees, setManagedEmployees] = useState([]);
   const [managedServices, setManagedServices] = useState([]);
   const [isSavingData, setIsSavingData] = useState(false);
+  const [editingService, setEditingService] = useState(null);
+  const [editingEmployee, setEditingEmployee] = useState(null);
 
   // Stylist Profile State
   const [showPasswords, setShowPasswords] = useState({});
@@ -611,23 +613,19 @@ export default function AdminDashboard() {
           </div>
         </div>
       ) : activeTab === 'employees' ? (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in pb-20">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">Gestión de Empleadas</h2>
             <button 
               onClick={() => {
-                const name = prompt("Nombre de la empleada:");
-                if (!name) return;
-                const branch = prompt("Sucursal (carrizalejo, mision, nacional):", "carrizalejo");
-                const newEmp = {
+                setEditingEmployee({
                   id: `e-${Date.now()}`,
-                  name,
-                  branch,
-                  img: `https://ui-avatars.com/api/?name=${name}&background=111&color=cc0000`,
+                  name: "",
+                  branch: "carrizalejo",
+                  img: `https://ui-avatars.com/api/?background=111&color=cc0000&name=New`,
                   canTakeAppointments: true,
                   role: "stylist"
-                };
-                saveEmployees([...managedEmployees, newEmp]);
+                });
               }}
               className="bg-mbRed text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-2"
             >
@@ -637,15 +635,23 @@ export default function AdminDashboard() {
           
           <div className="grid gap-4">
             {managedEmployees.map(emp => (
-              <div key={emp.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
+              <div key={emp.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between group hover:border-white/20 transition-all">
                 <div className="flex items-center gap-4">
-                  <img src={emp.img} className="w-12 h-12 rounded-full object-cover" alt="" />
+                  <img src={emp.img} className="w-12 h-12 rounded-full object-cover border border-white/10" alt="" />
                   <div>
-                    <p className="font-bold uppercase">{emp.name}</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">{emp.branch}</p>
+                    <p className="font-bold uppercase text-white">{emp.name}</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                      <MapPin className="w-3 h-3" /> {branches.find(b => b.id === emp.branch)?.name || emp.branch}
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <button 
+                    onClick={() => setEditingEmployee(emp)}
+                    className="p-2 text-gray-500 hover:text-white transition-colors"
+                  >
+                    <Edit2 className="w-5 h-5" />
+                  </button>
                   <button 
                     onClick={() => {
                       if (confirm(`¿Eliminar a ${emp.name}?`)) {
@@ -662,25 +668,20 @@ export default function AdminDashboard() {
           </div>
         </div>
       ) : activeTab === 'services' ? (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in pb-20">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">Catálogo de Servicios</h2>
             <button 
               onClick={() => {
-                const name = prompt("Nombre del servicio:");
-                if (!name) return;
-                const price = prompt("Precio (ej: $280):", "$280");
-                const duration = prompt("Duración en minutos:", "30");
-                const newServ = {
+                setEditingService({
                   id: `s-${Date.now()}`,
-                  name,
-                  price,
-                  durationMins: parseInt(duration),
+                  name: "",
+                  price: "$0",
+                  durationMins: 30,
                   category: "HAIRSTUDIO",
                   branches: ["carrizalejo", "mision", "nacional"],
                   active: true
-                };
-                saveServices([...managedServices, newServ]);
+                });
               }}
               className="bg-mbRed text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-2"
             >
@@ -690,12 +691,23 @@ export default function AdminDashboard() {
           
           <div className="grid gap-3">
             {managedServices.map(serv => (
-              <div key={serv.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
-                <div>
-                  <p className="font-bold uppercase">{serv.name}</p>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-widest">{serv.price} • {serv.durationMins} min • {serv.category}</p>
+              <div key={serv.id} className="bg-white/5 border border-white/10 p-5 rounded-2xl flex items-center justify-between hover:border-white/20 transition-all">
+                <div className="space-y-1">
+                  <p className="font-bold uppercase text-white text-lg">{serv.name}</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-mbRed font-bold text-sm bg-mbRed/10 px-2 py-0.5 rounded-lg">{serv.price}</span>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-widest">{serv.durationMins} min</span>
+                    <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full uppercase tracking-tighter">{serv.category}</span>
+                    {!serv.active && <span className="text-[8px] bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full uppercase font-bold">Inactivo</span>}
+                  </div>
                 </div>
                 <div className="flex gap-2">
+                  <button 
+                    onClick={() => setEditingService(serv)}
+                    className="p-2 text-gray-500 hover:text-white transition-colors"
+                  >
+                    <Edit2 className="w-5 h-5" />
+                  </button>
                   <button 
                     onClick={() => {
                       if (confirm(`¿Eliminar ${serv.name}?`)) {
@@ -1013,6 +1025,172 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Service Editor Modal */}
+      {editingService && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+          <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-lg rounded-3xl p-8 relative animate-scale-in">
+            <button onClick={() => setEditingService(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-3xl font-['Oswald'] font-bold uppercase text-white mb-8">Administrar Servicio</h2>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const exists = managedServices.find(s => s.id === editingService.id);
+              if (exists) {
+                saveServices(managedServices.map(s => s.id === editingService.id ? editingService : s));
+              } else {
+                saveServices([...managedServices, editingService]);
+              }
+              setEditingService(null);
+            }} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Nombre del Servicio</label>
+                  <input 
+                    type="text" required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-mbRed transition-all"
+                    value={editingService.name}
+                    onChange={e => setEditingService({...editingService, name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Precio</label>
+                  <input 
+                    type="text" required placeholder="$280"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-mbRed transition-all"
+                    value={editingService.price}
+                    onChange={e => setEditingService({...editingService, price: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Duración (Mins)</label>
+                  <input 
+                    type="number" required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-mbRed transition-all"
+                    value={editingService.durationMins}
+                    onChange={e => setEditingService({...editingService, durationMins: parseInt(e.target.value)})}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Categoría / Bloque</label>
+                  <select 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-mbRed transition-all"
+                    value={editingService.category}
+                    onChange={e => setEditingService({...editingService, category: e.target.value})}
+                  >
+                    <option value="HAIRSTUDIO">HAIRSTUDIO (Cabello)</option>
+                    <option value="AFEITADO">AFEITADO (Barba)</option>
+                    <option value="GROOMING">GROOMING (Limpieza)</option>
+                    <option value="SPA">SPA (Tratamientos)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl">
+                <input 
+                  type="checkbox" id="service-active"
+                  className="w-5 h-5 accent-mbRed"
+                  checked={editingService.active}
+                  onChange={e => setEditingService({...editingService, active: e.target.checked})}
+                />
+                <label htmlFor="service-active" className="text-sm text-gray-300 font-bold uppercase tracking-widest">Servicio Activo</label>
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full bg-mbRed text-white font-bold py-5 rounded-2xl hover:bg-red-700 transition-all uppercase tracking-[0.2em] font-['Oswald'] shadow-xl shadow-mbRed/20"
+              >
+                Guardar Cambios
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Employee Editor Modal */}
+      {editingEmployee && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+          <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-lg rounded-3xl p-8 relative animate-scale-in">
+            <button onClick={() => setEditingEmployee(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-3xl font-['Oswald'] font-bold uppercase text-white mb-8">Administrar Empleada</h2>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const exists = managedEmployees.find(emp => emp.id === editingEmployee.id);
+              if (exists) {
+                saveEmployees(managedEmployees.map(emp => emp.id === editingEmployee.id ? editingEmployee : emp));
+              } else {
+                saveEmployees([...managedEmployees, editingEmployee]);
+              }
+              setEditingEmployee(null);
+            }} className="space-y-6">
+              <div className="flex flex-col items-center mb-6">
+                <img src={editingEmployee.img} className="w-24 h-24 rounded-full object-cover border-2 border-mbRed mb-4" alt="" />
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest">Vista previa del perfil</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Nombre Completo</label>
+                  <input 
+                    type="text" required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-mbRed transition-all"
+                    value={editingEmployee.name}
+                    onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Sucursal Asignada</label>
+                  <select 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-mbRed transition-all"
+                    value={editingEmployee.branch}
+                    onChange={e => setEditingEmployee({...editingEmployee, branch: e.target.value})}
+                  >
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                    <option value="all">Todas las sucursales</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Rol</label>
+                    <select 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-mbRed transition-all"
+                      value={editingEmployee.role}
+                      onChange={e => setEditingEmployee({...editingEmployee, role: e.target.value})}
+                    >
+                      <option value="stylist">Estilista</option>
+                      <option value="receptionist">Recepcionista</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3 pt-8">
+                    <input 
+                      type="checkbox" id="emp-active"
+                      className="w-5 h-5 accent-mbRed"
+                      checked={editingEmployee.canTakeAppointments}
+                      onChange={e => setEditingEmployee({...editingEmployee, canTakeAppointments: e.target.checked})}
+                    />
+                    <label htmlFor="emp-active" className="text-xs text-gray-300 font-bold uppercase tracking-widest">Recibe Citas</label>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full bg-mbRed text-white font-bold py-5 rounded-2xl hover:bg-red-700 transition-all uppercase tracking-[0.2em] font-['Oswald'] shadow-xl shadow-mbRed/20"
+              >
+                Guardar Empleada
+              </button>
+            </form>
           </div>
         </div>
       )}
