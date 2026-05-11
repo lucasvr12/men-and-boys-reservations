@@ -128,8 +128,12 @@ export default function StaffAgenda() {
   };
 
   const handleAction = async (action, app) => {
-    if (action === "delete" || action === "noshow") {
-      const confirmMsg = action === "delete" ? "¿Liberar este horario?" : "¿Marcar como 'No asistió' y liberar horario?";
+    if (action === "delete" || action === "noshow" || action === "finish") {
+      const confirmMsg = 
+        action === "delete" ? "¿Liberar este horario?" : 
+        action === "noshow" ? "¿Marcar como 'No asistió' y liberar horario?" :
+        "¿Marcar como cita finalizada?";
+        
       if (!confirm(confirmMsg)) return;
 
       try {
@@ -138,7 +142,7 @@ export default function StaffAgenda() {
           phone: app.phone || "",
           date: app.date || "",
           time: app.time || "",
-          status: action === "noshow" ? "No asistió" : "Cancelada"
+          status: action === "noshow" ? "No asistió" : action === "finish" ? "Finalizada" : "Cancelada"
         }).toString();
 
         const res = await fetch(`/api/admin/appointments/${app.id}?${queryParams}`, {
@@ -500,6 +504,7 @@ export default function StaffAgenda() {
                   <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Hora</th>
                   <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Estado</th>
                   <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden md:table-cell">Cliente</th>
+                  <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden md:table-cell">Servicio</th>
                   <th className="text-center px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Acción</th>
                 </tr>
               </thead>
@@ -555,6 +560,11 @@ export default function StaffAgenda() {
                         <td className="px-5 py-3 hidden md:table-cell">
                           <span className="font-semibold text-white">
                             {app ? (app.name || "Sin nombre") : "—"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 hidden md:table-cell">
+                          <span className="text-gray-400 text-xs">
+                            {app ? (app.serviceName || "—") : "—"}
                           </span>
                         </td>
                         <td className="px-5 py-3 text-center">
@@ -726,7 +736,7 @@ export default function StaffAgenda() {
                   >
                     <option value="Vacaciones">Vacaciones</option>
                     <option value="Descanso">Descanso Semanal</option>
-                    <option value="Permiso">Permiso Especial</option>
+                    <option value="Permiso">Permiso especial</option>
                   </select>
                 </div>
               </div>
@@ -825,20 +835,27 @@ export default function StaffAgenda() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-8">
+              <div className="grid grid-cols-3 gap-3 mb-8">
                 <button 
                   onClick={() => handleAction("noshow", editingApp)}
-                  className="flex flex-col items-center justify-center p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-yellow-500/10 hover:border-yellow-500/30 group transition-all"
+                  className="flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-yellow-500/10 hover:border-yellow-500/30 group transition-all text-center"
                 >
-                  <AlertCircle className="w-6 h-6 text-yellow-500 mb-2" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-yellow-500">No Asistió</span>
+                  <AlertCircle className="w-5 h-5 text-yellow-500 mb-2" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-yellow-500 leading-tight">No Asistió</span>
                 </button>
                 <button 
                   onClick={() => handleAction("delete", editingApp)}
-                  className="flex flex-col items-center justify-center p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-red-500/10 hover:border-red-500/30 group transition-all"
+                  className="flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-red-500/10 hover:border-red-500/30 group transition-all text-center"
                 >
-                  <Trash2 className="w-6 h-6 text-red-500 mb-2" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-red-500">Eliminar</span>
+                  <Trash2 className="w-5 h-5 text-red-500 mb-2" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-red-500 leading-tight">Eliminar</span>
+                </button>
+                <button 
+                  onClick={() => handleAction("finish", editingApp)}
+                  className="flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-green-500/10 hover:border-green-500/30 group transition-all text-center"
+                >
+                  <CheckCircle className="w-5 h-5 text-green-500 mb-2" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-green-500 leading-tight">Terminé la cita</span>
                 </button>
               </div>
 

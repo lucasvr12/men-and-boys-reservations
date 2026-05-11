@@ -110,6 +110,13 @@ export default function Home() {
 
   const handleBranchSelect = (id) => {
     updateData("branch", id);
+    // Auto-scroll to continue button
+    setTimeout(() => {
+      const continueBtn = document.getElementById("continue-branch-btn");
+      if (continueBtn) {
+        continueBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const handleServiceSelect = (id) => {
@@ -216,8 +223,8 @@ export default function Home() {
       {/* STEP 0.1: IDENTIFY */}
       {step === 0.1 && (
         <div className="max-w-md mx-auto space-y-8 animate-step-in py-10">
-          <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Volver
+          <button onClick={prevStep} className="flex items-center text-lg font-bold text-mbRed hover:text-white transition group mb-6">
+            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" /> Volver atrás
           </button>
           <div className="text-center">
             <h2 className="text-4xl font-['Oswald'] font-bold mb-4 uppercase">Identifícate</h2>
@@ -261,8 +268,8 @@ export default function Home() {
       {/* STEP 1: SUCURSAL */}
       {step === 1 && (
         <div key="step1" className="space-y-6 animate-step-in">
-          <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Volver
+          <button onClick={prevStep} className="flex items-center text-lg font-bold text-mbRed hover:text-white transition group mb-6">
+            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" /> Volver atrás
           </button>
           <div className="text-center mb-10">
             <h1 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu sucursal</h1>
@@ -332,10 +339,11 @@ export default function Home() {
               </div>
               
               <button
+                id="continue-branch-btn"
                 onClick={nextStep}
                 className="w-full bg-mbRed text-white font-bold py-5 rounded-2xl hover:bg-red-700 transition-all uppercase tracking-[0.2em] font-['Oswald'] shadow-xl shadow-mbRed/20"
               >
-                Continuar reserva
+                Continuar con esta sucursal
               </button>
             </div>
           )}
@@ -345,8 +353,8 @@ export default function Home() {
       {/* STEP 2: SERVICIO */}
       {step === 2 && (
         <div key="step2" className="space-y-6 animate-step-in">
-          <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Volver
+          <button onClick={prevStep} className="flex items-center text-lg font-bold text-mbRed hover:text-white transition group mb-6">
+            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" /> Volver atrás
           </button>
           <div className="text-center mb-10">
             <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">¿Qué servicio buscas?</h2>
@@ -387,9 +395,7 @@ export default function Home() {
                             <h4 className="text-lg font-bold font-['Oswald'] uppercase text-white pr-4 leading-tight">{service.name}</h4>
                             <span className="font-bold text-mbRed whitespace-nowrap bg-mbRed/10 px-3 py-1 rounded-full text-sm">{service.price}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-400">
-                            <Clock className="w-4 h-4 text-gray-500" /> {service.durationStr}
-                          </div>
+                          {/* Time duration hidden per user request */}
                         </button>
                       ))}
                     </div>
@@ -404,8 +410,8 @@ export default function Home() {
       {/* STEP 3: ESTILISTA */}
       {step === 3 && (
         <div key="step3" className="space-y-6 animate-step-in">
-          <button onClick={prevStep} className="flex items-center text-sm text-gray-400 hover:text-white transition">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Volver
+          <button onClick={prevStep} className="flex items-center text-lg font-bold text-mbRed hover:text-white transition group mb-6">
+            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" /> Volver atrás
           </button>
           <div className="text-center mb-10">
             <h2 className="text-4xl font-['Oswald'] font-bold mb-2 uppercase">Elige tu estilista</h2>
@@ -440,9 +446,9 @@ export default function Home() {
               if (isRegisteredFlow) setStep(0);
               else prevStep();
             }} 
-            className="flex items-center text-sm text-gray-400 hover:text-white transition"
+            className="flex items-center text-lg font-bold text-mbRed hover:text-white transition group mb-6"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" /> {isRegisteredFlow ? "Cerrar sesión" : "Volver"}
+            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" /> {isRegisteredFlow ? "Cerrar sesión / Volver" : "Volver atrás"}
           </button>
           
           <div className="text-center mb-8">

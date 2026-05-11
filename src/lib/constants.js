@@ -7,7 +7,6 @@ export const branches = [
 export const stylists = [
   { id: "any", name: "Sin preferencia", branch: "all", img: "https://ui-avatars.com/api/?name=Cualquier+Estilista&background=333&color=fff", canTakeAppointments: false },
   // Misión del Valle
-  { id: "m-laura", name: "Laura", branch: "mision", img: "https://ui-avatars.com/api/?name=Laura&background=111&color=cc0000", canTakeAppointments: true },
   { id: "m-edith", name: "Edith", branch: "mision", img: "https://ui-avatars.com/api/?name=Edith&background=111&color=cc0000", canTakeAppointments: true },
   { id: "m-alicia", name: "Alicia", branch: "mision", img: "https://ui-avatars.com/api/?name=Alicia&background=111&color=cc0000", canTakeAppointments: true },
   // Carrizalejo
@@ -17,17 +16,15 @@ export const stylists = [
   { id: "c-carmen", name: "Carmen", branch: "carrizalejo", img: "https://ui-avatars.com/api/?name=Carmen&background=111&color=cc0000", canTakeAppointments: true },
   // Carretera Nacional
   { id: "n-cristina", name: "Cristina", branch: "nacional", img: "https://ui-avatars.com/api/?name=Cristina&background=111&color=cc0000", canTakeAppointments: true },
-  { id: "n-laura", name: "Laura", branch: "nacional", img: "https://ui-avatars.com/api/?name=Laura&background=111&color=cc0000", canTakeAppointments: true },
   { id: "n-monse", name: "Monse", branch: "nacional", img: "https://ui-avatars.com/api/?name=Monse&background=111&color=cc0000", canTakeAppointments: true },
-  { id: "n-vanesa-e", name: "Vanesa estilista", branch: "nacional", img: "https://ui-avatars.com/api/?name=Vanesa&background=111&color=cc0000", canTakeAppointments: true },
   { id: "n-vanesa-r", name: "Vanesa Recepcionista", branch: "nacional", img: "https://ui-avatars.com/api/?name=Vanesa&background=111&color=cc0000", canTakeAppointments: false },
 ];
 
 export const servicesCatalog = [
   // HAIRSTUDIO
-  { id: "ninos", name: "Niños", durationStr: "30 min", durationMins: 30, price: "$220", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },
-  { id: "joven", name: "Joven", durationStr: "30 min", durationMins: 30, price: "$260", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },
-  { id: "adulto", name: "Adulto", durationStr: "30 min", durationMins: 30, price: "$280", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },
+  { id: "ninos", name: "Corte Niños", durationStr: "30 min", durationMins: 30, price: "$220", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },
+  { id: "joven", name: "Corte Joven", durationStr: "30 min", durationMins: 30, price: "$260", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },
+  { id: "adulto", name: "Corte Adulto", durationStr: "30 min", durationMins: 30, price: "$280", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },
   { id: "corte_maquina", name: "Corte Máquina", durationStr: "20 min", durationMins: 20, price: "$220", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },
   { id: "corte_express", name: "Corte Express", durationStr: "20 min", durationMins: 20, price: "$220", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },
   { id: "corte_mb", name: "Corte MB Experience", durationStr: "1 hora", durationMins: 60, price: "$450", category: "HAIRSTUDIO", branches: ["mision", "nacional", "carrizalejo"] },

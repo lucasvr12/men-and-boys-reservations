@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   
-  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "staff", "profiles", "metrics", "clientes"
+  const [activeTab, setActiveTab] = useState("appointments"); // "appointments", "full_agenda", "staff", "profiles", "employees", "services", "clientes"
 
   // Personal Agenda State
   const [agendaMode, setAgendaMode] = useState("personal"); // "personal" | "branch"
@@ -39,6 +39,11 @@ export default function AdminDashboard() {
   // Edit State
   const [editingApp, setEditingApp] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Managed Data
+  const [managedEmployees, setManagedEmployees] = useState([]);
+  const [managedServices, setManagedServices] = useState([]);
+  const [isSavingData, setIsSavingData] = useState(false);
 
   // Stylist Profile State
   const [showPasswords, setShowPasswords] = useState({});
@@ -100,6 +105,7 @@ export default function AdminDashboard() {
       fetchAppointments();
       fetchMonthlyAppointments();
       fetchCustomers();
+      fetchManagedData();
     }
   }, [filterDate, isAuthenticated]);
 
@@ -113,6 +119,21 @@ export default function AdminDashboard() {
       console.error("Error fetching customers:", err);
     } finally {
       setIsLoadingCustomers(false);
+    }
+  };
+
+  const fetchManagedData = async () => {
+    try {
+      const [empRes, servRes] = await Promise.all([
+        fetch('/api/admin/employees'),
+        fetch('/api/admin/services')
+      ]);
+      const empData = await empRes.json();
+      const servData = await servRes.json();
+      setManagedEmployees(empData.employees || []);
+      setManagedServices(servData.services || []);
+    } catch (err) {
+      console.error("Error fetching managed data:", err);
     }
   };
 
@@ -213,6 +234,34 @@ export default function AdminDashboard() {
     }
   };
 
+  const saveEmployees = async (data) => {
+    setIsSavingData(true);
+    try {
+      const res = await fetch('/api/admin/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) fetchManagedData();
+    } finally {
+      setIsSavingData(false);
+    }
+  };
+
+  const saveServices = async (data) => {
+    setIsSavingData(true);
+    try {
+      const res = await fetch('/api/admin/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) fetchManagedData();
+    } finally {
+      setIsSavingData(false);
+    }
+  };
+
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -298,25 +347,43 @@ export default function AdminDashboard() {
           <div className="flex gap-4 mt-4">
             <button 
               onClick={() => setActiveTab("appointments")}
-              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'appointments' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+              className={`pb-2 px-1 text-[10px] font-bold transition-all ${activeTab === 'appointments' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
             >
-              CITAS Y CALENDARIO
+              CITAS
+            </button>
+            <button 
+              onClick={() => setActiveTab("full_agenda")}
+              className={`pb-2 px-1 text-[10px] font-bold transition-all ${activeTab === 'full_agenda' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+            >
+              AGENDA COMPLETA
             </button>
             <button 
               onClick={() => setActiveTab("staff")}
-              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'staff' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+              className={`pb-2 px-1 text-[10px] font-bold transition-all ${activeTab === 'staff' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
             >
-              GESTIÓN STAFF
+              BLOQUEOS
+            </button>
+            <button 
+              onClick={() => setActiveTab("employees")}
+              className={`pb-2 px-1 text-[10px] font-bold transition-all ${activeTab === 'employees' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+            >
+              EMPLEADAS
+            </button>
+            <button 
+              onClick={() => setActiveTab("services")}
+              className={`pb-2 px-1 text-[10px] font-bold transition-all ${activeTab === 'services' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+            >
+              SERVICIOS
             </button>
             <button 
               onClick={() => setActiveTab("profiles")}
-              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'profiles' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+              className={`pb-2 px-1 text-[10px] font-bold transition-all ${activeTab === 'profiles' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
             >
-              PERFILES STAFF
+              PERFILES
             </button>
             <button 
               onClick={() => setActiveTab("clientes")}
-              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'clientes' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
+              className={`pb-2 px-1 text-[10px] font-bold transition-all ${activeTab === 'clientes' ? 'text-mbRed border-b-2 border-mbRed' : 'text-gray-500 hover:text-white'}`}
             >
               CLIENTES
             </button>
@@ -464,6 +531,187 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      ) : activeTab === 'full_agenda' ? (
+        <div className="space-y-6 animate-fade-in">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">Agenda General - {filterDate}</h2>
+            <div className="flex items-center gap-4">
+              <select 
+                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                value={agendaSelectedBranch}
+                onChange={(e) => setAgendaSelectedBranch(e.target.value)}
+              >
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              <input 
+                type="date" 
+                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white [color-scheme:dark]"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40">
+            <table className="w-full border-collapse min-w-[800px]">
+              <thead>
+                <tr className="bg-black/60 border-b border-white/10">
+                  <th className="p-4 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest sticky left-0 bg-black/80 z-20 w-24">Hora</th>
+                  {stylists.filter(s => s.branch === agendaSelectedBranch || s.branch === 'all').map(s => (
+                    <th key={s.id} className="p-4 text-center text-[10px] font-bold text-gray-300 uppercase tracking-widest min-w-[150px]">
+                      <div className="flex flex-col items-center gap-1">
+                        <img src={s.img} className="w-8 h-8 rounded-full border border-mbRed/30" alt="" />
+                        <span>{s.name}</span>
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const slots = [];
+                  for (let h = 10; h < 20; h++) {
+                    for (let m = 0; m < 60; m += 30) {
+                      slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+                    }
+                  }
+                  return slots.map(time => (
+                    <tr key={time} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                      <td className="p-4 font-['Oswald'] font-bold text-mbRed text-lg sticky left-0 bg-black/80 z-10 group-hover:bg-white/5 border-r border-white/5">{time}</td>
+                      {stylists.filter(s => s.branch === agendaSelectedBranch || s.branch === 'all').map(s => {
+                        const app = appointments.find(a => a.time === time && (a.stylist === s.name || (s.id === 'any' && a.stylist === 'Sin preferencia')));
+                        const isBlock = app && ((app.name || "").includes("COMIDA") || (app.name || "").includes("VACACIONES") || (app.name || "").includes("BLOQUEO"));
+                        
+                        return (
+                          <td key={s.id} className={`p-1 border-r border-white/5 min-h-[60px]`}>
+                            {app ? (
+                              <div 
+                                onClick={() => setEditingApp(app)}
+                                className={`p-2 rounded-lg h-full text-[10px] cursor-pointer transition-all hover:scale-[1.02] ${
+                                  isBlock ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/30" : 
+                                  "bg-mbRed/20 text-white border border-mbRed/30"
+                                }`}
+                              >
+                                <p className="font-bold uppercase truncate">{app.name}</p>
+                                <p className="text-[8px] opacity-60 truncate">{app.serviceName || "Servicio"}</p>
+                              </div>
+                            ) : (
+                              <div className="h-full w-full opacity-0 hover:opacity-100 flex items-center justify-center">
+                                <PlusCircle className="w-4 h-4 text-gray-700" />
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : activeTab === 'employees' ? (
+        <div className="space-y-6 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">Gestión de Empleadas</h2>
+            <button 
+              onClick={() => {
+                const name = prompt("Nombre de la empleada:");
+                if (!name) return;
+                const branch = prompt("Sucursal (carrizalejo, mision, nacional):", "carrizalejo");
+                const newEmp = {
+                  id: `e-${Date.now()}`,
+                  name,
+                  branch,
+                  img: `https://ui-avatars.com/api/?name=${name}&background=111&color=cc0000`,
+                  canTakeAppointments: true,
+                  role: "stylist"
+                };
+                saveEmployees([...managedEmployees, newEmp]);
+              }}
+              className="bg-mbRed text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" /> Nueva Empleada
+            </button>
+          </div>
+          
+          <div className="grid gap-4">
+            {managedEmployees.map(emp => (
+              <div key={emp.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <img src={emp.img} className="w-12 h-12 rounded-full object-cover" alt="" />
+                  <div>
+                    <p className="font-bold uppercase">{emp.name}</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">{emp.branch}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      if (confirm(`¿Eliminar a ${emp.name}?`)) {
+                        saveEmployees(managedEmployees.filter(e => e.id !== emp.id));
+                      }
+                    }}
+                    className="p-2 text-gray-500 hover:text-mbRed transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : activeTab === 'services' ? (
+        <div className="space-y-6 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-['Oswald'] font-bold uppercase text-white">Catálogo de Servicios</h2>
+            <button 
+              onClick={() => {
+                const name = prompt("Nombre del servicio:");
+                if (!name) return;
+                const price = prompt("Precio (ej: $280):", "$280");
+                const duration = prompt("Duración en minutos:", "30");
+                const newServ = {
+                  id: `s-${Date.now()}`,
+                  name,
+                  price,
+                  durationMins: parseInt(duration),
+                  category: "HAIRSTUDIO",
+                  branches: ["carrizalejo", "mision", "nacional"],
+                  active: true
+                };
+                saveServices([...managedServices, newServ]);
+              }}
+              className="bg-mbRed text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" /> Nuevo Servicio
+            </button>
+          </div>
+          
+          <div className="grid gap-3">
+            {managedServices.map(serv => (
+              <div key={serv.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                  <p className="font-bold uppercase">{serv.name}</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest">{serv.price} • {serv.durationMins} min • {serv.category}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      if (confirm(`¿Eliminar ${serv.name}?`)) {
+                        saveServices(managedServices.filter(s => s.id !== serv.id));
+                      }
+                    }}
+                    className="p-2 text-gray-500 hover:text-mbRed transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
       ) : activeTab === 'profiles' ? (
         <div className="space-y-8 animate-slide-up">
           <div className="flex items-center justify-between">
