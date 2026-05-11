@@ -157,15 +157,16 @@ export default function Home() {
     setIsSubmitting(true);
     
     try {
+      const selectedService = dynamicServices.find(s => s.id === formData.service);
       const response = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           branchName: branches.find(b => b.id === formData.branch)?.name,
-          serviceName: servicesCatalog.find(s => s.id === formData.service)?.name,
-          durationMins: servicesCatalog.find(s => s.id === formData.service)?.durationMins,
-          stylistName: stylists.find(s => s.id === formData.stylist)?.name,
+          serviceName: selectedService?.name || formData.service,
+          durationMins: selectedService?.durationMins || 30,
+          stylistName: formData.stylist,
         }),
       });
 
@@ -521,24 +522,21 @@ export default function Home() {
               </>
             )}
           </div>
-          
-                >
-                  Cambiar preferencias
-                </button>
-              )}
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Sucursal:</span>
-                <span className="font-bold">{branches.find(b => b.id === formData.branch)?.name || "No seleccionada"}</span>
+
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
+            <h4 className="font-['Oswald'] uppercase text-gray-400 text-sm mb-4">Resumen de tu selección</h4>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                <span className="text-gray-500 uppercase text-[10px] font-bold tracking-widest">Sucursal</span>
+                <span className="text-white font-bold uppercase">{branches.find(b => b.id === formData.branch)?.name || formData.branch}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Servicio:</span>
-                <span className="font-bold">{servicesCatalog.find(s => s.id === formData.service)?.name || "No seleccionado"}</span>
+              <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                <span className="text-gray-500 uppercase text-[10px] font-bold tracking-widest">Servicio</span>
+                <span className="text-white font-bold uppercase">{dynamicServices.find(s => s.id === formData.service)?.name || formData.service}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Estilista:</span>
-                <span className="font-bold">{stylists.find(s => s.id === formData.stylist)?.name || "No seleccionado"}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 uppercase text-[10px] font-bold tracking-widest">Estilista</span>
+                <span className="text-white font-bold uppercase">{dynamicEmployees.find(s => s.name === formData.stylist)?.name || formData.stylist}</span>
               </div>
             </div>
           </div>
