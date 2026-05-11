@@ -562,7 +562,14 @@ export default function AdminDashboard() {
                   {stylists.filter(s => s.branch === agendaSelectedBranch || s.branch === 'all').map(s => (
                     <th key={s.id} className="p-4 text-center text-[10px] font-bold text-gray-300 uppercase tracking-widest min-w-[150px]">
                       <div className="flex flex-col items-center gap-1">
-                        <img src={s.img} className="w-8 h-8 rounded-full border border-mbRed/30" alt="" />
+                        <img 
+                          src={s.img} 
+                          className="w-8 h-8 rounded-full border border-mbRed/30" 
+                          alt="" 
+                          onError={(e) => {
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=333&color=fff`;
+                          }}
+                        />
                         <span>{s.name}</span>
                       </div>
                     </th>
@@ -637,7 +644,14 @@ export default function AdminDashboard() {
             {managedEmployees.map(emp => (
               <div key={emp.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between group hover:border-white/20 transition-all">
                 <div className="flex items-center gap-4">
-                  <img src={emp.img} className="w-12 h-12 rounded-full object-cover border border-white/10" alt="" />
+                  <img 
+                    src={emp.img} 
+                    className="w-12 h-12 rounded-full object-cover border border-white/10" 
+                    alt="" 
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=333&color=fff`;
+                    }}
+                  />
                   <div>
                     <p className="font-bold uppercase text-white">{emp.name}</p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest flex items-center gap-2">
@@ -741,6 +755,9 @@ export default function AdminDashboard() {
                       src={stylistSettings[stylist.id]?.photo || stylist.img} 
                       alt={stylist.name} 
                       className="w-24 h-24 rounded-full object-cover border-2 border-white/10 group-hover:border-mbRed/50 transition-all"
+                      onError={(e) => {
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(stylist.name)}&background=333&color=fff`;
+                      }}
                     />
                     <label 
                       htmlFor={`photo-${stylist.id}`}
@@ -1017,7 +1034,14 @@ export default function AdminDashboard() {
                   <div className="flex flex-wrap gap-2">
                     {stylists.filter(s => s.branch === branch.id).map(s => (
                       <div key={s.id} className="bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-sm flex items-center gap-2 text-white">
-                        <img src={s.img} className="w-6 h-6 rounded-full" alt="" />
+                        <img 
+                          src={s.img} 
+                          className="w-6 h-6 rounded-full" 
+                          alt="" 
+                          onError={(e) => {
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=333&color=fff`;
+                          }}
+                        />
                         {s.name}
                       </div>
                     ))}
@@ -1132,7 +1156,14 @@ export default function AdminDashboard() {
               setEditingEmployee(null);
             }} className="space-y-6">
               <div className="flex flex-col items-center mb-6">
-                <img src={editingEmployee.img} className="w-24 h-24 rounded-full object-cover border-2 border-mbRed mb-4" alt="" />
+                <img 
+                  src={editingEmployee.img} 
+                  className="w-24 h-24 rounded-full object-cover border-2 border-mbRed mb-4" 
+                  alt="" 
+                  onError={(e) => {
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(editingEmployee.name)}&background=333&color=fff`;
+                  }}
+                />
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest">Vista previa del perfil</p>
               </div>
 

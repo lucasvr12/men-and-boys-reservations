@@ -1,11 +1,13 @@
 [
   { "id": "m-edith", "name": "Edith", "branch": "mision", "img": "/staff/edith.jpg", "canTakeAppointments": true, "role": "stylist" },
   { "id": "m-alicia", "name": "Alicia", "branch": "mision", "img": "/staff/aly.jpg", "canTakeAppointments": true, "role": "stylist" },
+  { "id": "m-laura", "name": "Laura", "branch": "mision", "img": "/staff/laura.jpg", "canTakeAppointments": true, "role": "stylist" },
   { "id": "c-severa", "name": "Severa (Vera)", "branch": "carrizalejo", "img": "/staff/Vera.jpg", "canTakeAppointments": true, "role": "stylist" },
   { "id": "c-elizabeth", "name": "Elizabeth", "branch": "carrizalejo", "img": "/staff/Eli.jpg", "canTakeAppointments": true, "role": "stylist" },
   { "id": "c-sandy", "name": "Sandy", "branch": "carrizalejo", "img": "/staff/sandy.jpg", "canTakeAppointments": true, "role": "stylist" },
   { "id": "c-carmen", "name": "Carmen", "branch": "carrizalejo", "img": "/staff/carmen.jpg", "canTakeAppointments": true, "role": "stylist" },
   { "id": "n-cristina", "name": "Cristina", "branch": "nacional", "img": "/staff/cristy.jpg", "canTakeAppointments": true, "role": "stylist" },
   { "id": "n-monse", "name": "Monse", "branch": "nacional", "img": "/staff/monse.jpg", "canTakeAppointments": true, "role": "stylist" },
+  { "id": "n-laura", "name": "Laura", "branch": "nacional", "img": "/staff/laura.jpg", "canTakeAppointments": true, "role": "stylist" },
   { "id": "n-vanesa-r", "name": "Vanesa Recepcionista", "branch": "nacional", "img": "/staff/vanesa.jpg", "canTakeAppointments": false, "role": "receptionist" }
 ]

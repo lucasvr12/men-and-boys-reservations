@@ -9,6 +9,7 @@ export const stylists = [
   // Misión del Valle
   { id: "m-edith", name: "Edith", branch: "mision", img: "/staff/edith.jpg", canTakeAppointments: true },
   { id: "m-alicia", name: "Alicia", branch: "mision", img: "/staff/aly.jpg", canTakeAppointments: true },
+  { id: "m-laura", name: "Laura", branch: "mision", img: "/staff/laura.jpg", canTakeAppointments: true },
   // Carrizalejo
   { id: "c-severa", name: "Severa (Vera)", branch: "carrizalejo", img: "/staff/Vera.jpg", canTakeAppointments: true },
   { id: "c-elizabeth", name: "Elizabeth", branch: "carrizalejo", img: "/staff/Eli.jpg", canTakeAppointments: true },
@@ -17,6 +18,7 @@ export const stylists = [
   // Carretera Nacional
   { id: "n-cristina", name: "Cristina", branch: "nacional", img: "/staff/cristy.jpg", canTakeAppointments: true },
   { id: "n-monse", name: "Monse", branch: "nacional", img: "/staff/monse.jpg", canTakeAppointments: true },
+  { id: "n-laura", name: "Laura", branch: "nacional", img: "/staff/laura.jpg", canTakeAppointments: true },
   { id: "n-vanesa-r", name: "Vanesa Recepcionista", branch: "nacional", img: "/staff/vanesa.jpg", canTakeAppointments: false },
 ];
 

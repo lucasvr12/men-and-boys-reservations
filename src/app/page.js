@@ -464,7 +464,14 @@ export default function Home() {
                     : 'bg-white/5 border-white/10 hover:border-white/20'
                   }`}
                 >
-                  <img src={stylist.img} alt={stylist.name} className="w-16 h-16 rounded-full object-cover border-2 border-white/10" />
+                  <img 
+                    src={stylist.img} 
+                    alt={stylist.name} 
+                    className="w-16 h-16 rounded-full object-cover border-2 border-white/10" 
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(stylist.name)}&background=333&color=fff`;
+                    }}
+                  />
                   <div className="text-left">
                     <p className="font-['Oswald'] font-bold uppercase tracking-widest text-lg leading-tight">{stylist.name}</p>
                     <p className="text-xs text-gray-400 mt-1 uppercase tracking-tighter">Disponible hoy</p>
