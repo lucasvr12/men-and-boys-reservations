@@ -40,6 +40,8 @@ export default function StaffAgenda() {
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [dayTimeline, setDayTimeline] = useState([]);
+  const [dynamicEmployees, setDynamicEmployees] = useState([]);
+  const [stylistSettings, setStylistSettings] = useState({});
 
   // UI State
   const [editingApp, setEditingApp] = useState(null);
@@ -72,6 +74,26 @@ export default function StaffAgenda() {
 
   // Effects
   useEffect(() => {
+    fetchManagedData();
+  }, []);
+
+  const fetchManagedData = async () => {
+    try {
+      const [empRes, settRes] = await Promise.all([
+        fetch('/api/admin/employees'),
+        fetch('/api/admin/stylists')
+      ]);
+      const empData = await empRes.json();
+      const settData = await settRes.json();
+      setDynamicEmployees(empData.employees || stylists);
+      setStylistSettings(settData || {});
+    } catch (err) {
+      console.error("Error loading managed data:", err);
+      setDynamicEmployees(stylists);
+    }
+  };
+
+  useEffect(() => {
     if (isAuthenticated) {
       fetchAppointments();
     }
@@ -80,7 +102,7 @@ export default function StaffAgenda() {
   useEffect(() => {
     filterDay(selectedDate);
     fetchDayTimeline(selectedDate);
-  }, [selectedDate, allAppointments, selectedStylist, agendaMode]);
+  }, [selectedDate, allAppointments, selectedStylist, agendaMode, dynamicEmployees]);
 
   const fetchDayTimeline = async (date) => {
     if (!selectedBranch || !selectedStylist) return;
@@ -94,7 +116,11 @@ export default function StaffAgenda() {
   // Logic
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === "myb2026$$") {
+    const customPass = stylistSettings[selectedStylist]?.password;
+    const isGlobalPass = password === "myb2026$$";
+    const isCustomPass = customPass && password === customPass;
+
+    if (isGlobalPass || isCustomPass) {
       setIsAuthenticated(true);
       setLoginError("");
     } else {
@@ -118,7 +144,7 @@ export default function StaffAgenda() {
   const filterDay = (date) => {
     let filtered = allAppointments.filter(a => a.date === date);
     if (agendaMode === "personal") {
-      const stylistName = stylists.find(s => s.id === selectedStylist)?.name;
+      const stylistName = dynamicEmployees.find(s => s.id === selectedStylist)?.name;
       filtered = filtered.filter(a => a.stylist === stylistName || a.stylist === "Sin preferencia");
     } else {
       const branchName = branches.find(b => b.id === selectedBranch)?.name;
@@ -376,13 +402,13 @@ export default function StaffAgenda() {
               </button>
               <h2 className="text-xl font-bold uppercase tracking-widest text-center">2. ¿Quién eres?</h2>
               <div className="grid grid-cols-2 gap-3">
-                {stylists.filter(s => s.branch === selectedBranch && s.canTakeAppointments).map(s => (
+                {dynamicEmployees.filter(s => (s.branch === selectedBranch || s.branch === 'all') && s.canTakeAppointments).map(s => (
                   <button
                     key={s.id}
                     onClick={() => { setSelectedStylist(s.id); setStep(3); }}
                     className="flex flex-col items-center p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-mbRed/20 hover:border-mbRed transition-all"
                   >
-                    <img src={s.img} className="w-12 h-12 rounded-full mb-2 object-cover" alt="" />
+                    <img src={stylistSettings[s.id]?.photo || s.img} className="w-12 h-12 rounded-full mb-2 object-cover" alt="" />
                     <span className="text-xs font-bold uppercase">{s.name}</span>
                   </button>
                 ))}
@@ -396,9 +422,9 @@ export default function StaffAgenda() {
                 <ChevronLeft className="w-3 h-3" /> Volver
               </button>
               <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl mb-4">
-                <img src={stylists.find(s => s.id === selectedStylist)?.img} className="w-12 h-12 rounded-full object-cover" alt="" />
+                <img src={stylistSettings[selectedStylist]?.photo || dynamicEmployees.find(s => s.id === selectedStylist)?.img} className="w-12 h-12 rounded-full object-cover" alt="" />
                 <div>
-                  <p className="font-bold uppercase leading-none">{stylists.find(s => s.id === selectedStylist)?.name}</p>
+                  <p className="font-bold uppercase leading-none">{dynamicEmployees.find(s => s.id === selectedStylist)?.name}</p>
                   <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">{branches.find(b => b.id === selectedBranch)?.name}</p>
                 </div>
               </div>
@@ -432,9 +458,9 @@ export default function StaffAgenda() {
       {/* Header */}
       <div className="flex items-center justify-between bg-white/5 border border-white/10 p-6 rounded-2xl shadow-xl">
         <div className="flex items-center gap-4">
-          <img src={stylistObj?.img} className="w-16 h-16 rounded-full border-2 border-mbRed object-cover" alt="" />
+          <img src={stylistSettings[selectedStylist]?.photo || dynamicEmployees.find(s => s.id === selectedStylist)?.img} className="w-16 h-16 rounded-full border-2 border-mbRed object-cover" alt="" />
           <div>
-            <h1 className="text-2xl font-['Oswald'] font-bold uppercase tracking-tight text-white leading-none">Agenda de {stylistObj?.name}</h1>
+            <h1 className="text-2xl font-['Oswald'] font-bold uppercase tracking-tight text-white leading-none">Agenda de {dynamicEmployees.find(s => s.id === selectedStylist)?.name}</h1>
             <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2 flex items-center gap-1">
               <MapPin className="w-3 h-3 text-mbRed" /> {branches.find(b => b.id === selectedBranch)?.name}
             </p>
@@ -503,8 +529,7 @@ export default function StaffAgenda() {
                 <tr className="bg-black/60 border-b border-white/10">
                   <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Hora</th>
                   <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Estado</th>
-                  <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden md:table-cell">Cliente</th>
-                  <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden md:table-cell">Servicio</th>
+                  <th className="text-left px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cliente / Servicio</th>
                   <th className="text-center px-5 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Acción</th>
                 </tr>
               </thead>
@@ -557,15 +582,19 @@ export default function StaffAgenda() {
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-3 hidden md:table-cell">
-                          <span className="font-semibold text-white">
-                            {app ? (app.name || "Sin nombre") : "—"}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 hidden md:table-cell">
-                          <span className="text-gray-400 text-xs">
-                            {app ? (app.serviceName || "—") : "—"}
-                          </span>
+                        <td className="px-5 py-3">
+                          {app ? (
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-white uppercase text-xs">
+                                {app.name || "Sin nombre"}
+                              </span>
+                              <span className="text-mbRed font-bold text-[10px] uppercase mt-0.5">
+                                {app.serviceName || "Servicio"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-600">—</span>
+                          )}
                         </td>
                         <td className="px-5 py-3 text-center">
                           {app ? (
