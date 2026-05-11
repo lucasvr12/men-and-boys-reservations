@@ -7,17 +7,17 @@ export const branches = [
 export const stylists = [
   { id: "any", name: "Sin preferencia", branch: "all", img: "https://ui-avatars.com/api/?name=Cualquier+Estilista&background=333&color=fff", canTakeAppointments: false },
   // Misión del Valle
-  { id: "m-edith", name: "Edith", branch: "mision", img: "https://ui-avatars.com/api/?name=Edith&background=111&color=cc0000", canTakeAppointments: true },
-  { id: "m-alicia", name: "Alicia", branch: "mision", img: "https://ui-avatars.com/api/?name=Alicia&background=111&color=cc0000", canTakeAppointments: true },
+  { id: "m-edith", name: "Edith", branch: "mision", img: "/staff/edith.jpg", canTakeAppointments: true },
+  { id: "m-alicia", name: "Alicia", branch: "mision", img: "/staff/aly.jpg", canTakeAppointments: true },
   // Carrizalejo
-  { id: "c-severa", name: "Severa (Vera)", branch: "carrizalejo", img: "https://ui-avatars.com/api/?name=Severa&background=111&color=cc0000", canTakeAppointments: true },
-  { id: "c-elizabeth", name: "Elizabeth", branch: "carrizalejo", img: "https://ui-avatars.com/api/?name=Elizabeth&background=111&color=cc0000", canTakeAppointments: true },
-  { id: "c-sandy", name: "Sandy", branch: "carrizalejo", img: "https://ui-avatars.com/api/?name=Sandy&background=111&color=cc0000", canTakeAppointments: true },
-  { id: "c-carmen", name: "Carmen", branch: "carrizalejo", img: "https://ui-avatars.com/api/?name=Carmen&background=111&color=cc0000", canTakeAppointments: true },
+  { id: "c-severa", name: "Severa (Vera)", branch: "carrizalejo", img: "/staff/Vera.jpg", canTakeAppointments: true },
+  { id: "c-elizabeth", name: "Elizabeth", branch: "carrizalejo", img: "/staff/Eli.jpg", canTakeAppointments: true },
+  { id: "c-sandy", name: "Sandy", branch: "carrizalejo", img: "/staff/sandy.jpg", canTakeAppointments: true },
+  { id: "c-carmen", name: "Carmen", branch: "carrizalejo", img: "/staff/carmen.jpg", canTakeAppointments: true },
   // Carretera Nacional
-  { id: "n-cristina", name: "Cristina", branch: "nacional", img: "https://ui-avatars.com/api/?name=Cristina&background=111&color=cc0000", canTakeAppointments: true },
-  { id: "n-monse", name: "Monse", branch: "nacional", img: "https://ui-avatars.com/api/?name=Monse&background=111&color=cc0000", canTakeAppointments: true },
-  { id: "n-vanesa-r", name: "Vanesa Recepcionista", branch: "nacional", img: "https://ui-avatars.com/api/?name=Vanesa&background=111&color=cc0000", canTakeAppointments: false },
+  { id: "n-cristina", name: "Cristina", branch: "nacional", img: "/staff/cristy.jpg", canTakeAppointments: true },
+  { id: "n-monse", name: "Monse", branch: "nacional", img: "/staff/monse.jpg", canTakeAppointments: true },
+  { id: "n-vanesa-r", name: "Vanesa Recepcionista", branch: "nacional", img: "/staff/vanesa.jpg", canTakeAppointments: false },
 ];
 
 export const servicesCatalog = [
